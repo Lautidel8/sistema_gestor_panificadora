@@ -3,6 +3,13 @@ from frontend.pantalla_login import PantallaLogin
 from frontend.pantalla_principal import vista_principal
 
 def main(page: ft.Page):
+    
+    page.window_fullscreen = True
+    page.window_maximized = True
+    page.window_resizable = False
+    page.update()
+    
+    
     def cambiar_pantalla(e):
         if page.route == "/":
             PantallaLogin(page)

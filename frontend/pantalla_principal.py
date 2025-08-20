@@ -5,6 +5,10 @@ class vista_principal:
     
     def __init__(self, page: ft.Page):
         self.page = page
+        self.pedido_seleccionado = None
+        self.pedido_guardado = None
+        self.pedidos_refresh = []    # { changed code: lista de pedidos para refrescar }
+        self.data_table = None    # { changed code: referencia al DataTable para actualizar filas
         self.config_page()
         self.armar_vista()
 
@@ -16,46 +20,65 @@ class vista_principal:
         self.conexion = conectar()
         self.cursor = self.conexion.cursor()
 
+    def seleccionar_pedido(self, e, pedido):
+        if hasattr(e, "data") and not e.data:
+            self.pedido_seleccionado = None
+        else:
+            self.pedido_seleccionado = pedido
+        self._refresh_table()
+        self.page.update()        
+        
+    def _refresh_table(self):
+        if not self.data_table:
+            return
+        
+        
+        
 
     def armar_vista(self):
         
         self.cursor.execute("SELECT * FROM Pedido")
         pedidos = self.cursor.fetchall()
+        self.pedidos_refresh = pedidos    #guardo pedidos para refrescar
 
         filas = []
         for pedido in pedidos:
             filas.append(
                 ft.DataRow(
+                    selected=(self.pedido_seleccionado is not None and self.pedido_seleccionado[0] == pedido[0]),
+                    on_select_changed=lambda e, pedido=pedido: self.seleccionar_pedido(e, pedido),
                     cells=[
                         ft.DataCell(ft.Text(str(pedido[1]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[5]), style=ft.TextStyle(color="#37373A"))),
-                        ft.DataCell(ft.Text(str(pedido[3]), style=ft.TextStyle(color="#37373A"))), 
+                        ft.DataCell(ft.Text(str(pedido[3]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[4]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[6]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[2]), style=ft.TextStyle(color="#37373A"))),
+                        
                     ]
                 )
             )
 
+        self.data_table = ft.DataTable(               # { changed code: guardo la DataTable }
+            columns=[
+                ft.DataColumn(ft.Text("Nombre pedido", style=ft.TextStyle(color="#37373A"))),
+                ft.DataColumn(ft.Text("Cantidad", style=ft.TextStyle(color="#37373A"))),
+                ft.DataColumn(ft.Text("Precio", style=ft.TextStyle(color="#37373A"))),
+                ft.DataColumn(ft.Text("Cliente", style=ft.TextStyle(color="#37373A"))),
+                ft.DataColumn(ft.Text("Fecha del pedido", style=ft.TextStyle(color="#37373A"))),
+                ft.DataColumn(ft.Text("Estado del pedido", style=ft.TextStyle(color="#37373A"))),
+            ],
+            rows=filas,
+        )
 
         grilla_pedidos = ft.Container(
             expand=True,
             bgcolor="#fdd0b5",
             content=ft.Column(
                 [
-                    ft.DataTable(
-                        columns=[
-                            ft.DataColumn(ft.Text("Nombre pedido", style=ft.TextStyle(color="#37373A"))),
-                            ft.DataColumn(ft.Text("Cantidad", style=ft.TextStyle(color="#37373A"))),
-                            ft.DataColumn(ft.Text("Precio", style=ft.TextStyle(color="#37373A"))),
-                            ft.DataColumn(ft.Text("Cliente", style=ft.TextStyle(color="#37373A"))),
-                            ft.DataColumn(ft.Text("Fecha del pedido", style=ft.TextStyle(color="#37373A"))),
-                            ft.DataColumn(ft.Text("Estado del pedido", style=ft.TextStyle(color="#37373A"))),
-                        ],
-                        rows=filas
-                    )
+                    self.data_table,  
                 ],
-                scroll=ft.ScrollMode.ALWAYS,  # Scroll en el Column
+                scroll=ft.ScrollMode.ALWAYS,
             ),
             height=550,
             width=1100,
@@ -91,6 +114,14 @@ class vista_principal:
             size=30
         )
         
+        boton_controlar_stock = ft.ElevatedButton(
+            "x",
+            #on_click=self.validar_ingreso,
+            color="#fdd0b5",
+            bgcolor="#37373A",
+            width=100,
+        )
+        
         boton_modificar_pedido = ft.ElevatedButton(
             "x",
             #on_click=self.validar_ingreso,
@@ -106,6 +137,21 @@ class vista_principal:
             bgcolor="#37373A",
             width=100,
         )
+        
+        titulo_row = ft.Row(
+            expand=True,
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,   # título a la izquierda, botones a la derecha
+            vertical_alignment=ft.CrossAxisAlignment.CENTER, # centra verticalmente título y botones
+            controls=[
+                texto_principal,
+                ft.Row(                                      # fila interna para separar botones
+                    spacing=10,
+                    controls=[boton_modificar_pedido, boton_cargar_pedido]
+                )
+            ]
+        )
+        
+
 
         self.page.add(
             ft.Row(
@@ -117,7 +163,8 @@ class vista_principal:
                     ),
                     ft.Column(
                         expand=True,
-                        controls=[texto_principal,grilla_pedidos],
+                        controls=[titulo_row,grilla_pedidos],
+                        
                     ),
                 ]
             )
