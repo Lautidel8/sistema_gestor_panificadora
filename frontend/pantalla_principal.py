@@ -14,6 +14,28 @@ class vista_principal:
         self.config_page()
         self.armar_vista()
 
+    def estilo_texto(self):
+        return ft.TextStyle(
+            color="#37373A",
+            font_family="Arial",
+        )
+
+    def estilo_de_botones(self):
+        return ft.ButtonStyle(
+            text_style=ft.TextStyle(
+                font_family="Arial",
+            ),
+            color={ft.ControlState.DEFAULT:"#fdd0b5",
+                     ft.ControlState.HOVERED:"#37373A"},
+            bgcolor={ft.ControlState.DEFAULT:"#37373A",
+                     ft.ControlState.HOVERED:"#ffc08d",},
+            shape={
+                "": ft.RoundedRectangleBorder(radius=4)
+                
+            },
+            padding=15
+        )    
+
     def config_page(self):
         self.page.controls.clear()
         self.page.title = "Pantalla Principal"
@@ -73,11 +95,11 @@ class vista_principal:
                 ft.Container(
                     content=ft.Row(
                         controls=[
-                            ft.Container(ft.Text(str(pedido[1]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
-                            ft.Container(ft.Text(str(pedido[3]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
-                            ft.Container(ft.Text(str(pedido[4]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
-                            ft.Container(ft.Text(total_display, style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
-                            ft.Container(ft.Text(str(pedido[2]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[1]), style=self.estilo_texto()), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[3]), style=self.estilo_texto()), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[4]), style=self.estilo_texto()), expand=True, padding=10),
+                            ft.Container(ft.Text(total_display, style=self.estilo_texto()), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[2]), style=self.estilo_texto()), expand=True, padding=10),
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -94,6 +116,7 @@ class vista_principal:
 
     def armar_vista(self):
         
+        
         self.cursor.execute("SELECT * FROM Pedido")
         pedidos = self.cursor.fetchall()
         self.pedidos_refresh = pedidos    #guardo pedidos para refrescar
@@ -103,20 +126,20 @@ class vista_principal:
 
         header = ft.Row(
             controls=[
-                ft.Container(ft.Text("Nombre pedido", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
-                ft.Container(ft.Text("Cliente", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
-                ft.Container(ft.Text("Fecha del pedido", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
-                ft.Container(ft.Text("Precio total", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
-                ft.Container(ft.Text("Estado del pedido", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Nombre pedido", weight="bold", style=self.estilo_texto()), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Cliente", weight="bold", style=self.estilo_texto()), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Fecha del pedido", weight="bold", style=self.estilo_texto()), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Precio total", weight="bold", style=self.estilo_texto()), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Estado del pedido", weight="bold", style=self.estilo_texto()), expand=True, padding=10, bgcolor="#ffc08d"),
             ],
             spacing=0
         )
 
         # Contenedor scrollable solo con las filas
         self.rows_container = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, expand=True)
-
         # primer llenado de filas
         self._refresh_table()
+        
 
         grilla_pedidos = ft.Container(
             expand=True,
@@ -134,22 +157,55 @@ class vista_principal:
             padding=0,
         )
 
+        logo_pana = ft.Image(
+            src="logo_panaderia.png",
+            width=100,             
+            height=100,
+            fit=ft.ImageFit.CONTAIN
+        )
+
+        boton_generar_reporte = ft.ElevatedButton(
+            "Generar Reporte",
+            width=100,
+            style=self.estilo_de_botones()
+        )
+        
+        boton_cargar_materia_prima = ft.ElevatedButton(
+            "Cargar Materia Prima",
+            width=100,
+            style=self.estilo_de_botones()
+        )
+        
+        boton_cargar_producto = ft.ElevatedButton(
+            "Cargar Producto",
+            width=100,
+            style=self.estilo_de_botones()
+        )
+                
+        boton_control_stock_mp = ft.ElevatedButton(
+            "Consultar Materia Prima",
+            width=100,
+            style=self.estilo_de_botones()
+        )
+
+        
+        
         barra_navegacion = ft.Container(
             border_radius=10,
             bgcolor="#fdd0b5",
             padding=10,
             height=600,
-            width=120,
+            width=145,
             expand=True,
             content=ft.Column(
                 controls=[
-                    ft.Icon("home"),
-                    ft.Icon("location_on"),
-                    ft.Icon("calendar_month"),
-                    ft.Icon("settings"),
-                    ft.Icon("power_settings_new"),
+                    logo_pana,
+                    boton_cargar_materia_prima,
+                    boton_control_stock_mp,
+                    boton_cargar_producto,
+                    boton_generar_reporte,                   
                 ],
-                alignment=ft.MainAxisAlignment.START,
+                alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20,
                 expand=True
@@ -158,45 +214,33 @@ class vista_principal:
         
         texto_principal = ft.Text(
             "Pedidos",
-            color="#37373A",
-            size=30
-        )
-        
-        boton_controlar_stock = ft.ElevatedButton(
-            "x",
-            #on_click=self.validar_ingreso,
-            color="#fdd0b5",
-            bgcolor="#37373A",
-            width=100,
-        )
+            size=30,
+            style= self.estilo_texto()
+        )       
         
         
         texto_modificar_pedido = ft.Text(
             "Modificar Pedidos",
-            color="#37373A",
+            style=self.estilo_texto(),
             size=15
         )
         
         boton_modificar_pedido = ft.ElevatedButton(
             "x",
-            #on_click=self.validar_ingreso,
-            color="#fdd0b5",
-            bgcolor="#37373A",
             width=100,
+            style=self.estilo_de_botones()
         )
         
         texto_cargar_pedido = ft.Text(
             "Cargar Pedidos",
-            color="#37373A",
+            style=self.estilo_texto(),
             size=15
         )        
         
         boton_cargar_pedido = ft.ElevatedButton(
             "y",
-            #on_click=self.validar_ingreso,
-            color="#fdd0b5",
-            bgcolor="#37373A",
             width=100,
+            style=self.estilo_de_botones()
         )
         
         titulo_row = ft.Row(
