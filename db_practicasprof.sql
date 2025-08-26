@@ -7,41 +7,50 @@ correo_electronico varchar(50) not null,
 nombre_gerente varchar(30) not null
 );
 
-create table Pedido(
-id_pedido int primary key auto_increment,
-nombre_pedido varchar(40) not null,
-estado_pedido varchar(30) not null,
-precio int,
-tipo_pedido varchar(50) not null,
-cliente varchar(50) not null,
-cantidad int,
-fecha_pedido date,
-id_gerente int
+
+CREATE TABLE materia_prima (
+    id_materia_prima INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_mp VARCHAR(100) NOT NULL,
+    distribuidor VARCHAR(100) NOT NULL,
 );
 
-create table Detalle_pedido(
-id_detalle_pedido int primary key auto_increment,
-cantidad int,
-id_pedido int,
-id_producto int
+
+CREATE TABLE producto (
+    id_producto INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_producto VARCHAR(100) NOT NULL,
+    precio_unitario DECIMAL(10,2) NOT NULL
 );
 
-create table Producto(
-id_producto int primary key auto_increment,
-nombre_producto varchar(40) not null,
-cantidad int
+
+
+CREATE TABLE producto_materia_prima (
+    id_producto INT NOT NULL,
+    id_materia_prima INT NOT NULL,
+    cantidad DECIMAL(10,2) NOT NULL,
+    unidad VARCHAR(20) NOT NULL,
+    PRIMARY KEY (id_producto, id_materia_prima),
+    FOREIGN KEY (id_producto) REFERENCES producto(id_producto),
+    FOREIGN KEY (id_materia_prima) REFERENCES materia_prima(id_materia_prima)
 );
 
-create table MateriaPrima_Producto(
-cantidad int,
-unidad int,
-id_producto int,
-id_materia_prima int
+
+
+CREATE TABLE pedido (
+    id_pedido INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_pedido VARCHAR(100) NOT NULL,
+    estado_pedido VARCHAR(50) NOT NULL,
+    cliente VARCHAR(100) NOT NULL,
+    fecha_pedido DATE NOT NULL,
+    id_gerente INT,
+    FOREIGN KEY (id_gerente) REFERENCES Gerente(id_gerente)
 );
 
-create table MateriaPrima(
-id_materia_prima int primary key auto_increment,
-distribuidor varchar(40) not null,
-nombre_materia_prima varchar(50) not null
-);
 
+CREATE TABLE detalle_pedido (
+    id_detalle_pedido INT AUTO_INCREMENT PRIMARY KEY,
+    id_pedido INT NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL,
+    FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido),
+    FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
+);

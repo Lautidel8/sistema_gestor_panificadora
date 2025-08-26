@@ -49,21 +49,18 @@ class vista_principal:
                     on_select_changed=lambda e, pedido=pedido: self.seleccionar_pedido(e, pedido),
                     cells=[
                         ft.DataCell(ft.Text(str(pedido[1]), style=ft.TextStyle(color="#37373A"))),
-                        ft.DataCell(ft.Text(str(pedido[5]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[3]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[4]), style=ft.TextStyle(color="#37373A"))),
-                        ft.DataCell(ft.Text(str(pedido[6]), style=ft.TextStyle(color="#37373A"))),
                         ft.DataCell(ft.Text(str(pedido[2]), style=ft.TextStyle(color="#37373A"))),
+
                         
                     ]
                 )
             )
 
-        self.data_table = ft.DataTable(               # { changed code: guardo la DataTable }
+        self.data_table = ft.DataTable(
             columns=[
                 ft.DataColumn(ft.Text("Nombre pedido", style=ft.TextStyle(color="#37373A"))),
-                ft.DataColumn(ft.Text("Cantidad", style=ft.TextStyle(color="#37373A"))),
-                ft.DataColumn(ft.Text("Precio", style=ft.TextStyle(color="#37373A"))),
                 ft.DataColumn(ft.Text("Cliente", style=ft.TextStyle(color="#37373A"))),
                 ft.DataColumn(ft.Text("Fecha del pedido", style=ft.TextStyle(color="#37373A"))),
                 ft.DataColumn(ft.Text("Estado del pedido", style=ft.TextStyle(color="#37373A"))),
