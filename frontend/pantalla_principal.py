@@ -7,8 +7,10 @@ class vista_principal:
         self.page = page
         self.pedido_seleccionado = None
         self.pedido_guardado = None
-        self.pedidos_refresh = []    # { changed code: lista de pedidos para refrescar }
-        self.data_table = None    # { changed code: referencia al DataTable para actualizar filas
+        self.pedidos_refresh = []    # lista de pedidos para refrescar }
+        self.data_table = None    # referencia al DataTable para actualizar filas
+        self.totales_map = {}
+        self.rows_container = None
         self.config_page()
         self.armar_vista()
 
@@ -21,19 +23,74 @@ class vista_principal:
         self.cursor = self.conexion.cursor()
 
     def seleccionar_pedido(self, e, pedido):
-        if hasattr(e, "data") and not e.data:
+        if getattr(e, "data", None) is False:
             self.pedido_seleccionado = None
         else:
-            self.pedido_seleccionado = pedido
+            if self.pedido_seleccionado is not None and self.pedido_seleccionado[0] == pedido[0]:
+                self.pedido_seleccionado = None
+            else:
+                self.pedido_seleccionado = pedido
+
         self._refresh_table()
-        self.page.update()        
+        self.page.update()         
+        
+    def _load_totales(self):
+        """
+        Carga en self.totales_map el total por pedido:
+        SUM(Detalle_pedido.cantidad * Producto.precio_unitario)
+        """
+        try:
+            self.cursor.execute(
+                """
+                SELECT dp.id_pedido, SUM(dp.cantidad * p.precio_unitario) as total
+                FROM Detalle_pedido dp
+                JOIN Producto p ON dp.id_producto = p.id_producto
+                GROUP BY dp.id_pedido
+                """
+            )
+            rows = self.cursor.fetchall()
+            self.totales_map = {r[0]: (r[1] if r[1] is not None else 0) for r in rows}
+        except Exception:
+            self.totales_map = {}
         
     def _refresh_table(self):
-        if not self.data_table:
+        if not self.rows_container:
             return
         
+        # recargar totales por si cambiaron los detalles
+        self._load_totales()
         
+        rows = []
+        for pedido in self.pedidos_refresh:
+            pid = pedido[0]
+            selected = (self.pedido_seleccionado is not None and self.pedido_seleccionado[0] == pid)
+            total = self.totales_map.get(pid, 0)
+            total_display = f"{total:,.2f}" if isinstance(total, (int, float)) else str(total)
+
+            bg = "#ffc7a4" if selected else None
         
+            rows.append(
+                ft.Container(
+                    content=ft.Row(
+                        controls=[
+                            ft.Container(ft.Text(str(pedido[1]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[3]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[4]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
+                            ft.Container(ft.Text(total_display, style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
+                            ft.Container(ft.Text(str(pedido[2]), style=ft.TextStyle(color="#37373A")), expand=True, padding=10),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=0
+                    ),
+                    bgcolor=bg,
+                    on_click=lambda e, pedido=pedido: self.seleccionar_pedido(e, pedido)
+                )
+            )
+            
+        self.rows_container.controls = rows
+        # no olvidar actualizar la página desde quien lo llame (aquí sí lo hacemos)
+        self.page.update()
 
     def armar_vista(self):
         
@@ -41,46 +98,40 @@ class vista_principal:
         pedidos = self.cursor.fetchall()
         self.pedidos_refresh = pedidos    #guardo pedidos para refrescar
 
-        filas = []
-        for pedido in pedidos:
-            filas.append(
-                ft.DataRow(
-                    selected=(self.pedido_seleccionado is not None and self.pedido_seleccionado[0] == pedido[0]),
-                    on_select_changed=lambda e, pedido=pedido: self.seleccionar_pedido(e, pedido),
-                    cells=[
-                        ft.DataCell(ft.Text(str(pedido[1]), style=ft.TextStyle(color="#37373A"))),
-                        ft.DataCell(ft.Text(str(pedido[3]), style=ft.TextStyle(color="#37373A"))),
-                        ft.DataCell(ft.Text(str(pedido[4]), style=ft.TextStyle(color="#37373A"))),
-                        ft.DataCell(ft.Text(str(pedido[2]), style=ft.TextStyle(color="#37373A"))),
+        # cargar totales iniciales
+        self._load_totales()
 
-                        
-                    ]
-                )
-            )
-
-        self.data_table = ft.DataTable(
-            columns=[
-                ft.DataColumn(ft.Text("Nombre pedido", style=ft.TextStyle(color="#37373A"))),
-                ft.DataColumn(ft.Text("Cliente", style=ft.TextStyle(color="#37373A"))),
-                ft.DataColumn(ft.Text("Fecha del pedido", style=ft.TextStyle(color="#37373A"))),
-                ft.DataColumn(ft.Text("Estado del pedido", style=ft.TextStyle(color="#37373A"))),
+        header = ft.Row(
+            controls=[
+                ft.Container(ft.Text("Nombre pedido", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Cliente", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Fecha del pedido", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Precio total", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
+                ft.Container(ft.Text("Estado del pedido", weight="bold", style=ft.TextStyle(color="#37373A")), expand=True, padding=10, bgcolor="#ffc08d"),
             ],
-            rows=filas,
+            spacing=0
         )
+
+        # Contenedor scrollable solo con las filas
+        self.rows_container = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, expand=True)
+
+        # primer llenado de filas
+        self._refresh_table()
 
         grilla_pedidos = ft.Container(
             expand=True,
             bgcolor="#fdd0b5",
             content=ft.Column(
                 [
-                    self.data_table,  
+                    header,
+                    self.rows_container,
                 ],
-                scroll=ft.ScrollMode.ALWAYS,
+                expand=True,
             ),
             height=550,
             width=1100,
             border_radius=10,
-            padding=10,
+            padding=0,
         )
 
         barra_navegacion = ft.Container(
@@ -119,6 +170,13 @@ class vista_principal:
             width=100,
         )
         
+        
+        texto_modificar_pedido = ft.Text(
+            "Modificar Pedidos",
+            color="#37373A",
+            size=15
+        )
+        
         boton_modificar_pedido = ft.ElevatedButton(
             "x",
             #on_click=self.validar_ingreso,
@@ -126,6 +184,12 @@ class vista_principal:
             bgcolor="#37373A",
             width=100,
         )
+        
+        texto_cargar_pedido = ft.Text(
+            "Cargar Pedidos",
+            color="#37373A",
+            size=15
+        )        
         
         boton_cargar_pedido = ft.ElevatedButton(
             "y",
@@ -143,7 +207,7 @@ class vista_principal:
                 texto_principal,
                 ft.Row(                                      # fila interna para separar botones
                     spacing=10,
-                    controls=[boton_modificar_pedido, boton_cargar_pedido]
+                    controls=[texto_modificar_pedido, boton_modificar_pedido, texto_cargar_pedido, boton_cargar_pedido]
                 )
             ]
         )
