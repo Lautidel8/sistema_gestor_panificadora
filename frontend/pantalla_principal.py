@@ -1,5 +1,6 @@
 from backend.conexion_a_BD.conexion_db import conectar
 import flet as ft
+from datetime import datetime 
 
 class vista_principal:
     
@@ -54,7 +55,8 @@ class vista_principal:
                 self.pedido_seleccionado = pedido
 
         self._refresh_table()
-        self.page.update()         
+        self.page.update()
+        
         
     def _load_totales(self):
         """
@@ -111,8 +113,41 @@ class vista_principal:
             )
             
         self.rows_container.controls = rows
-        # no olvidar actualizar la página desde quien lo llame (aquí sí lo hacemos)
         self.page.update()
+        
+    def filtrar_por_fecha(self, fecha):
+        if not fecha:
+            return
+            
+        # Convertir fecha del DatePicker a formato adecuado
+        fecha_str = fecha.strftime('%Y-%m-%d')
+        
+        if not hasattr(self, 'pedidos_originales'):
+            self.pedidos_originales = self.pedidos_refresh.copy()
+
+        self.pedidos_refresh = [p for p in self.pedidos_originales if str(p[4]) == fecha_str]
+
+        self._refresh_table()
+        self.page.update()
+        
+        self.page.snack_bar = ft.SnackBar(
+            ft.Text(f"Mostrando pedidos del {fecha_str}"),
+            open=True
+        )
+
+    def limpiar_filtro(self):
+        """Limpia el filtro y muestra todos los pedidos"""
+        if hasattr(self, 'pedidos_originales'):
+            self.pedidos_refresh = self.pedidos_originales.copy()
+            self._refresh_table()
+            self.page.update()
+            
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text("Filtro limpiado"),
+                open=True
+            )
+
+
 
     def armar_vista(self):
         
@@ -135,9 +170,30 @@ class vista_principal:
             spacing=0
         )
 
-        # Contenedor scrollable solo con las filas
+        date_picker = ft.DatePicker(
+            on_change=lambda e: self.filtrar_por_fecha(e.control.value),
+            first_date=datetime(2023, 1, 1),
+            last_date=datetime(2026, 12, 31),
+        )
+
+
+        filtro_grilla = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Text("Filtrar por fecha:", style=self.estilo_texto(),size=15),
+                    ft.TextButton(
+                        "Seleccionar fecha",
+                        style=self.estilo_de_botones(),
+                        on_click=lambda _: self.page.open(date_picker),
+                    ),
+                    ft.TextButton("Limpiar filtro", style=self.estilo_de_botones(), on_click=lambda _: self.limpiar_filtro()),
+                ],
+                alignment=ft.MainAxisAlignment.END,
+            ),
+            padding=10,
+        )
+
         self.rows_container = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=0, expand=True)
-        # primer llenado de filas
         self._refresh_table()
         
 
@@ -251,7 +307,7 @@ class vista_principal:
                 texto_principal,
                 ft.Row(                                      # fila interna para separar botones
                     spacing=10,
-                    controls=[texto_modificar_pedido, boton_modificar_pedido, texto_cargar_pedido, boton_cargar_pedido]
+                    controls=[filtro_grilla,texto_modificar_pedido, boton_modificar_pedido, texto_cargar_pedido, boton_cargar_pedido]
                 )
             ]
         )
