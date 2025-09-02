@@ -15,6 +15,14 @@ class vista_principal:
         self.config_page()
         self.armar_vista()
 
+    def config_page(self):
+        self.page.controls.clear()
+        self.page.title = "Pantalla Principal"
+        self.page.bgcolor = "#ffebdf"
+        self.page.scroll = ft.ScrollMode.AUTO
+        self.conexion = conectar()
+        self.cursor = self.conexion.cursor()
+
     def estilo_texto(self):
         return ft.TextStyle(
             color="#37373A",
@@ -37,13 +45,6 @@ class vista_principal:
             padding=15
         )    
 
-    def config_page(self):
-        self.page.controls.clear()
-        self.page.title = "Pantalla Principal"
-        self.page.bgcolor = "#ffebdf"
-        self.page.scroll = ft.ScrollMode.AUTO
-        self.conexion = conectar()
-        self.cursor = self.conexion.cursor()
 
     def seleccionar_pedido(self, e, pedido):
         if getattr(e, "data", None) is False:
@@ -282,7 +283,10 @@ class vista_principal:
         )
         
         boton_modificar_pedido = ft.ElevatedButton(
-            "x",
+            content=ft.Row(
+                controls=[ft.Icon(name=ft.Icons.CREATE_OUTLINED)],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
             width=100,
             style=self.estilo_de_botones()
         )
@@ -294,7 +298,10 @@ class vista_principal:
         )        
         
         boton_cargar_pedido = ft.ElevatedButton(
-            "y",
+            content=ft.Row(
+                controls=[ft.Icon(name=ft.Icons.ADD_CIRCLE)],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
             width=100,
             style=self.estilo_de_botones()
         )
