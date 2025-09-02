@@ -1,8 +1,9 @@
-from backend.conexion_a_BD.conexion_db import conectar
-import flet as ft
-from datetime import datetime 
 
-class vista_principal:
+from frontend.configuracion_pantalla import configuracion_pantalla
+import flet as ft
+from datetime import datetime
+
+class vista_principal(configuracion_pantalla):
     
     def __init__(self, page: ft.Page):
         self.page = page
@@ -15,13 +16,6 @@ class vista_principal:
         self.config_page()
         self.armar_vista()
 
-    def config_page(self):
-        self.page.controls.clear()
-        self.page.title = "Pantalla Principal"
-        self.page.bgcolor = "#ffebdf"
-        self.page.scroll = ft.ScrollMode.AUTO
-        self.conexion = conectar()
-        self.cursor = self.conexion.cursor()
 
     def estilo_texto(self):
         return ft.TextStyle(
