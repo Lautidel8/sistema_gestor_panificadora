@@ -1,5 +1,5 @@
 
-from frontend.configuracion_pantalla import configuracion_pantalla
+from frontend.controladores_front.configuracion_pantalla import configuracion_pantalla
 import flet as ft
 from datetime import datetime
 
@@ -9,35 +9,12 @@ class vista_principal(configuracion_pantalla):
         self.page = page
         self.pedido_seleccionado = None
         self.pedido_guardado = None
-        self.pedidos_refresh = []    # lista de pedidos para refrescar }
-        self.data_table = None    # referencia al DataTable para actualizar filas
+        self.pedidos_refresh = [] 
+        self.data_table = None 
         self.totales_map = {}
         self.rows_container = None
         self.config_page()
         self.armar_vista()
-
-
-    def estilo_texto(self):
-        return ft.TextStyle(
-            color="#37373A",
-            font_family="Arial",
-        )
-
-    def estilo_de_botones(self):
-        return ft.ButtonStyle(
-            text_style=ft.TextStyle(
-                font_family="Arial",
-            ),
-            color={ft.ControlState.DEFAULT:"#fdd0b5",
-                     ft.ControlState.HOVERED:"#37373A"},
-            bgcolor={ft.ControlState.DEFAULT:"#37373A",
-                     ft.ControlState.HOVERED:"#ffc08d",},
-            shape={
-                "": ft.RoundedRectangleBorder(radius=4)
-                
-            },
-            padding=15
-        )    
 
 
     def seleccionar_pedido(self, e, pedido):
@@ -224,7 +201,8 @@ class vista_principal(configuracion_pantalla):
         boton_cargar_materia_prima = ft.ElevatedButton(
             "Cargar Materia Prima",
             width=100,
-            style=self.estilo_de_botones()
+            style=self.estilo_de_botones(),
+            on_click=lambda e: self.page.go("/vista_carga_mp")
         )
         
         boton_cargar_producto = ft.ElevatedButton(

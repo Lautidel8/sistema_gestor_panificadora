@@ -1,6 +1,7 @@
 import flet as ft
 from frontend.pantalla_login import PantallaLogin
 from frontend.pantalla_principal import vista_principal
+from frontend.pantalla_cargar_materia_prima import vista_carga_mp
 
 def main(page: ft.Page):
     
@@ -13,13 +14,17 @@ def main(page: ft.Page):
     def cambiar_pantalla(e):
         if page.route == "/":
             PantallaLogin(page)
+            
         elif page.route == "/vista_principal":
             vista_principal(page)
+            
+        elif page.route == "/vista_carga_mp":
+            vista_carga_mp(page)
+            
         page.update()
 
     page.on_route_change = cambiar_pantalla
 
-    # Fuerza la ruta inicial a "/" y ejecuta la vista login
     page.go("/")
 
 

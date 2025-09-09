@@ -1,11 +1,7 @@
 
 from backend.controladores_pana.control_Contrasenia import Valida_contrasenia
-from frontend.pantalla_principal import vista_principal
 import flet as ft
 
-
-# page.controls.append(texto) solo agrega, necesitas llamar a page.update() después para ver el cambio
-# page.add(contra) agrega y actualiza la vista.
 
 class PantallaLogin:
     
