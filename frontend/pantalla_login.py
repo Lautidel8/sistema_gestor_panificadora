@@ -24,7 +24,6 @@ class PantallaLogin:
         self.page.update()
 
     def armar_vista(self):
-        # Arma la interfaz del login
         texto_titulo = ft.Text(
             "Sistema de Panadería Janssen",
             color="#fdd0b5",
