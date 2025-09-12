@@ -35,3 +35,15 @@ class configuracion_pantalla:
             },
             padding=15
         )
+
+    def boton_volver(self):
+        boton_volver = ft.ElevatedButton(
+            content=ft.Row(
+                controls=[ft.Icon(name=ft.Icons.HOME)],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            width=120,
+            style=self.estilo_de_botones(),
+            on_click=lambda e: self.page.go("/vista_principal")
+        )
+        return boton_volver

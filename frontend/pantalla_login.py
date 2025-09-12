@@ -43,7 +43,8 @@ class PantallaLogin:
             focused_border_color="#fdd0b5",
             label_style=ft.TextStyle(color="#37373A"),
             text_style=ft.TextStyle(color="#37373A"),
-            width=400
+            width=400,
+            value="1234"
         )
 
         boton_ingresar = ft.ElevatedButton(

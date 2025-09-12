@@ -57,14 +57,18 @@ class vista_carga_mp(configuracion_pantalla):
             border=ft.border.all(2, "#37373A"),
         )
         
+
+
         self.page.add(
             ft.Container(
-                ft.Column(
-                    expand=True,
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=10,
+                content=ft.Column(
                     controls=[
+                        ft.Row(
+                            controls=[self.boton_volver()],
+                            alignment=ft.MainAxisAlignment.START,
+                            expand=True
+                        ),
+                        ft.Container(height=40),
                         ft.Row(
                             controls=[
                                 texto_carga_mp,boton_cargar_mp_nueva
@@ -74,13 +78,12 @@ class vista_carga_mp(configuracion_pantalla):
                             spacing=130,
                         ),
                         container_principal
-                    ]
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
                 alignment=ft.alignment.center,
-                padding=ft.padding.only(top=110),
-                expand=True,
+                expand=True
             )
         )
-
-
 
