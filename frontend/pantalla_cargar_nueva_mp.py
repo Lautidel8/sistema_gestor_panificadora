@@ -9,24 +9,41 @@ class vista_carga_mp_nueva(configuracion_pantalla):
     def __init__(self, page: ft.Page):
         self.page = page
         self.config_page()
+        self.page.snack_bar = ft.SnackBar(
+            content=ft.Text(""),
+            open=False,
+            duration=2000,
+        )
         self.armar_vista()
-        
+    
+    def mostrar_snack_bar(self, mensaje):
+        self.page.open(ft.SnackBar(
+            content=ft.Text(mensaje),
+            bgcolor="#fdcb80",
+            duration=3500
+        ))
+        self.page.update()
+
+
+    
     def guardar_materia_prima(self, e):
         nombre = self.entry1.value.strip()
         distribuidor = self.entry2.value.strip()
+
         if not nombre or not distribuidor:
-            self.page.snack_bar = ft.SnackBar(ft.Text("Completa ambos campos"), open=True)
-            self.page.update()
+            self.mostrar_snack_bar("Completa ambos campos")
             return
         
         controlador = CargarMateriaPrima()
         try:
             resultado = controlador.cargar_materia_prima(nombre, distribuidor)
             if resultado:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Materia prima cargada con éxito"), open=True)
+                self.mostrar_snack_bar("Materia prima cargada con éxito")
+                self.entry1.value = ""
+                self.entry2.value = ""
+                self.page.update()
             else:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Error al cargar materia prima"), open=True)
-            self.page.update()
+                self.mostrar_snack_bar("Error al cargar materia prima")
         finally:
             controlador.cerrar_conexion()
 
@@ -42,6 +59,25 @@ class vista_carga_mp_nueva(configuracion_pantalla):
         boton_guardar = ft.ElevatedButton("Guardar", width=100, style=self.estilo_de_botones(),
                                           on_click=self.guardar_materia_prima)
 
+        boton_eliminar_mp = ft.ElevatedButton(
+            width=200,
+            height=35,
+            style=ft.ButtonStyle(
+                color={ft.ControlState.DEFAULT:"#37373A",
+                    ft.ControlState.HOVERED:"#606065"},
+                bgcolor={ft.ControlState.DEFAULT:"#a72d2d",
+                        ft.ControlState.HOVERED:"#b84444"},
+                shape={
+                    "": ft.RoundedRectangleBorder(radius=4)
+                },
+                padding=15
+            ),
+            content=ft.Row(
+                controls=[ft.Icon(name=ft.Icons.HIGHLIGHT_REMOVE_SHARP),
+                          ft.Text("Eliminar Materia Prima")],
+                alignment=ft.MainAxisAlignment.CENTER,
+            )
+        )
 
         container_principal = ft.Container(
             content=ft.Column(
@@ -74,7 +110,14 @@ class vista_carga_mp_nueva(configuracion_pantalla):
                             expand=True
                         ),
                         ft.Container(height=40),
-                        texto_carga_mp,
+                        ft.Row(
+                            controls=[
+                                texto_carga_mp,boton_eliminar_mp
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            spacing=105,
+                        ),                        
                         container_principal
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,

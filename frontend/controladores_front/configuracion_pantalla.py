@@ -42,7 +42,7 @@ class configuracion_pantalla:
                 controls=[ft.Icon(name=ft.Icons.HOME)],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
-            width=120,
+            width=50,
             style=self.estilo_de_botones(),
             on_click=lambda e: self.page.go("/vista_principal")
         )

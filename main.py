@@ -7,9 +7,7 @@ from frontend.pantalla_cargar_nueva_mp import vista_carga_mp_nueva
 def main(page: ft.Page):
     
     page.window_fullscreen = True
-    page.window_maximized = True
     page.window_resizable = False
-    page.update()
     
     
     def cambiar_pantalla(e):
