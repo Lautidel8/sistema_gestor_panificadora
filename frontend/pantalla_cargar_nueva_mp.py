@@ -19,18 +19,20 @@ class vista_carga_mp_nueva(configuracion_pantalla):
     def guardar_materia_prima(self, e):
         nombre = self.entry1.value.strip()
         distribuidor = self.entry2.value.strip()
+        id_unidad = self.dropdown_unidades.value
 
-        if not nombre or not distribuidor:
-            self.mostrar_snack_bar("Completa ambos campos")
+        if not nombre or not distribuidor or not id_unidad:
+            self.mostrar_snack_bar("Completa todos los campos")
             return
         
         controlador = CargarMateriaPrima()
         try:
-            resultado = controlador.cargar_materia_prima(nombre, distribuidor)
+            resultado = controlador.cargar_materia_prima(nombre, distribuidor, id_unidad)
             if resultado:
                 self.mostrar_snack_bar("Materia prima cargada con éxito")
                 self.entry1.value = ""
                 self.entry2.value = ""
+                self.dropdown_unidades.value = None
                 self.page.update()
             else:
                 self.mostrar_snack_bar("Error al cargar materia prima")
@@ -52,44 +54,46 @@ class vista_carga_mp_nueva(configuracion_pantalla):
 
         radio_group = ft.RadioGroup(
             content=ft.ListView(
-                controls=[ft.Radio(value=mp, label=mp) for mp in materias_primas],
+                controls=[ft.Radio(value=mp,active_color="#454444", label=mp,label_style=self.estilo_texto()) for mp in materias_primas],
                 expand=True,
-                spacing=10,
+                spacing=5,
                 auto_scroll=False,
             ),
             on_change=lambda e: seleccion.update({"nombre": e.control.value}),
         )
 
-        dialogo = ft.AlertDialog(
+        ventana_eliminar_mp = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Selecciona la materia prima a eliminar"),
+            bgcolor="#a72d2d",
+            title=ft.Text("Selecciona la materia prima a eliminar",style=self.estilo_texto(), size=15),
                 content=ft.Container(
                     content=ft.Column(
                         controls=[radio_group],
-                        scroll="auto",  # Aquí sí funciona
-                        height=250,
+                        scroll="auto",
+                        height=300,
                     ),
                     width=300,
+                    
                 ),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: self.cerrar_dialogo(dialogo)),
+                ft.TextButton("Cancelar",style=self.estilo_de_botones(), on_click=lambda e: self.cerrar_dialogo(ventana_eliminar_mp)),
                 ft.TextButton(
                     "Eliminar",
-                    on_click=lambda e: self.eliminar_materia_prima_seleccionada(dialogo, seleccion["nombre"])
+                    style=self.estilo_de_botones(),
+                    on_click=lambda e: self.eliminar_materia_prima_seleccionada(ventana_eliminar_mp, seleccion["nombre"])
                 ),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
         self.page.overlay.clear()
-        self.page.overlay.append(dialogo)
-        dialogo.open = True
+        self.page.overlay.append(ventana_eliminar_mp)
+        ventana_eliminar_mp.open = True
         self.page.update()
 
 
     def cerrar_dialogo(self, dialogo):
         dialogo.open = False
-        self.page.overlay.clear()
         self.page.update()
 
 
@@ -111,6 +115,18 @@ class vista_carga_mp_nueva(configuracion_pantalla):
 
 
     def armar_vista(self):
+        
+        controlador = CargarMateriaPrima()
+        try:
+            unidades = controlador.listar_unidades()
+        finally:
+            controlador.cerrar_conexion()
+        
+        opciones_unidades = [
+            ft.dropdown.Option(text=nombre, key=str(id_unidad))
+            for id_unidad, nombre in unidades
+        ]
+        
         texto_carga_mp = ft.Text("Cargar Materia Prima Nueva", style=self.estilo_texto(), size=15)
 
         self.entry1 = ft.TextField(
@@ -124,6 +140,16 @@ class vista_carga_mp_nueva(configuracion_pantalla):
         self.entry2 = ft.TextField(
             label="Distribuidor",
             width=300,
+            label_style=ft.TextStyle(color="#37373A"),
+            border_color="#37373A",
+            focused_border_color="#545454",
+            text_style=ft.TextStyle(color="#37373A")
+        )
+
+        self.dropdown_unidades = ft.Dropdown(
+            label="Unidad de medida",
+            width=300,
+            options=opciones_unidades,
             label_style=ft.TextStyle(color="#37373A"),
             border_color="#37373A",
             focused_border_color="#545454",
@@ -162,6 +188,8 @@ class vista_carga_mp_nueva(configuracion_pantalla):
                     self.entry1,
                     ft.Container(height=10),
                     self.entry2,
+                    ft.Container(height=10),
+                    self.dropdown_unidades,
                     ft.Container(height=10),
                     boton_guardar
                 ],

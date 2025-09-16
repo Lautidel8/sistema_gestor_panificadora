@@ -6,17 +6,24 @@ class CargarMateriaPrima:
     def __init__(self):
         self.conexion = conectar()
         self.cursor = self.conexion.cursor()
+    
+    def listar_unidades(self):
+        try:
+            self.cursor.execute("SELECT id_unidad, nombre FROM unidad")
+            return self.cursor.fetchall()
+        except Exception as e:
+            print("Error al obtener unidades:", e)
+            return []
         
-        
-    def cargar_materia_prima(self, nombre, distribuidor):
+    def cargar_materia_prima(self, nombre, distribuidor, id_unidad):
+
         try:
             self.cursor.execute(
-                "INSERT INTO MateriaPrima (nombre_materia_prima, distribuidor) VALUES (%s, %s)",
-                (nombre, distribuidor)
+                "INSERT INTO MateriaPrima (nombre_materia_prima, distribuidor, id_unidad) VALUES (%s, %s, %s)",
+                (nombre, distribuidor, id_unidad)
             )
             self.conexion.commit()
             return True
-        
         except Exception as e:
             print("Error al cargar materia prima:", e)
             self.conexion.rollback()
