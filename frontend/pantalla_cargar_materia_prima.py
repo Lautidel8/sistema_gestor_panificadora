@@ -35,8 +35,6 @@ class vista_carga_mp(configuracion_pantalla):
         container_principal = ft.Container(
             content=ft.Column(
                 controls=[
-
-
                     entry1,
                     ft.Container(height=10),
                     entry2,

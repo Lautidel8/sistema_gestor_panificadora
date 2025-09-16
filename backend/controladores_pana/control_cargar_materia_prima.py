@@ -21,9 +21,25 @@ class CargarMateriaPrima:
             print("Error al cargar materia prima:", e)
             self.conexion.rollback()
             return False
+
+    def eliminar_materia_prima(self, nombre):
+        try:
+            self.cursor.execute(
+                "DELETE FROM MateriaPrima WHERE nombre_materia_prima = %s",
+                (nombre,)
+            )
+            self.conexion.commit()
+            return True
+        
+        except Exception as e:
+            print("Error al eliminar materia prima:", e)
+            self.conexion.rollback()
+            return False
     
-    
-    # Funcion que cierra el cursor y la conexión a la base de datos para ahorro de recursos.    
+    def listar_materias_primas(self):
+        self.cursor.execute("SELECT nombre_materia_prima FROM MateriaPrima")
+        return [row[0] for row in self.cursor.fetchall()]
+       
     def cerrar_conexion(self):
         
         if hasattr(self, 'cursor') and self.cursor:

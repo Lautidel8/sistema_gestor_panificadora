@@ -91,7 +91,6 @@ class vista_principal(configuracion_pantalla):
         if not fecha:
             return
             
-        # Convertir fecha del DatePicker a formato adecuado
         fecha_str = fecha.strftime('%Y-%m-%d')
         
         if not hasattr(self, 'pedidos_originales'):
@@ -101,11 +100,8 @@ class vista_principal(configuracion_pantalla):
 
         self._refresh_table()
         self.page.update()
-        
-        self.page.snack_bar = ft.SnackBar(
-            ft.Text(f"Mostrando pedidos del {fecha_str}"),
-            open=True
-        )
+
+        self.mostrar_snack_bar(f"Mostrando pedidos del {fecha_str}")
 
     def limpiar_filtro(self):
         """Limpia el filtro y muestra todos los pedidos"""
@@ -114,21 +110,15 @@ class vista_principal(configuracion_pantalla):
             self._refresh_table()
             self.page.update()
             
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text("Filtro limpiado"),
-                open=True
-            )
-
+            self.mostrar_snack_bar("Filtro limpiado, mostrando todos los pedidos")
 
 
     def armar_vista(self):
         
-        
         self.cursor.execute("SELECT * FROM Pedido")
         pedidos = self.cursor.fetchall()
-        self.pedidos_refresh = pedidos    #guardo pedidos para refrescar
+        self.pedidos_refresh = pedidos
 
-        # cargar totales iniciales
         self._load_totales()
 
         header = ft.Row(
@@ -218,7 +208,6 @@ class vista_principal(configuracion_pantalla):
         )
 
         
-        
         barra_navegacion = ft.Container(
             border_radius=10,
             bgcolor="#fdd0b5",
@@ -291,7 +280,6 @@ class vista_principal(configuracion_pantalla):
             ]
         )
         
-
 
         self.page.add(
             ft.Row(

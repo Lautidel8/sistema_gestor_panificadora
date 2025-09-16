@@ -47,3 +47,11 @@ class configuracion_pantalla:
             on_click=lambda e: self.page.go("/vista_principal")
         )
         return boton_volver
+    
+    def mostrar_snack_bar(self, mensaje):
+        self.page.open(ft.SnackBar(
+            content=ft.Text(mensaje),
+            bgcolor="#fdcb80",
+            duration=3500
+        ))
+        self.page.update()
