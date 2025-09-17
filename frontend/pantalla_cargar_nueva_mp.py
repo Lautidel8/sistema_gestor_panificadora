@@ -150,10 +150,7 @@ class vista_carga_mp_nueva(configuracion_pantalla):
             label="Unidad de medida",
             width=300,
             options=opciones_unidades,
-            label_style=ft.TextStyle(color="#37373A"),
-            border_color="#37373A",
-            focused_border_color="#545454",
-            text_style=ft.TextStyle(color="#37373A")
+            label_style=self.estilo_texto(),
         )
 
         boton_guardar = ft.ElevatedButton(

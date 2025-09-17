@@ -56,3 +56,4 @@ class CargarMateriaPrima:
         if hasattr(self, 'conexion') and self.conexion:
             self.conexion.close()
             self.conexion = None
+            
