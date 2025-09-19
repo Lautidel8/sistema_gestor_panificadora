@@ -10,7 +10,9 @@ class vista_carga_mp(configuracion_pantalla):
         self.page = page
         self.resultados = ft.Column(scroll="auto", height=80, spacing=0)
         self.materias_primas = []
-        self.busqueda = None 
+        self.busqueda = None
+        self.materia_prima_seleccionada = None #guarda el id
+        self.entry_cantidad = None
         self.config_page()
         self.armar_vista()
         
@@ -29,6 +31,7 @@ class vista_carga_mp(configuracion_pantalla):
             width=300,
             on_change=self.filtrar_opciones,  # filtra en cada tecla
             border_color="#37373A",
+            label_style=self.estilo_texto(),
             focused_border_color="#545454",
             text_style=self.estilo_texto()
         )
@@ -37,28 +40,72 @@ class vista_carga_mp(configuracion_pantalla):
 
         return ft.Column([self.busqueda, self.resultados])
 
+    def seleccionar_opcion(self, valor,id_mp=None):
+        self.busqueda.value = valor
+        self.materia_prima_seleccionada = id_mp
+        self.resultados.controls.clear()
+        self.busqueda.page.update()
+
     def filtrar_opciones(self, e):
         texto = e.control.value.lower()
         self.resultados.controls.clear()
 
-        for mp in self.materias_primas:
-            if texto in mp.lower():
+        for item in self.materias_primas:
+            if isinstance(item, int) or isinstance(item, str):
+                id_mp = item
+                nombre_mp = str(item)
+            else:
+                id_mp = item[0]
+                nombre_mp = item[1]
+                
+            if texto in str(nombre_mp).lower():
                 self.resultados.controls.append(
                     ft.Container(
                         bgcolor="#f8c499",
                         border_radius=5,
+                        border=ft.border.all(1, "#37373A"),
                         content=ft.ListTile(
-                            title=ft.Text(mp, style=self.estilo_texto()),
-                            on_click=lambda ev, valor=mp: self.seleccionar_opcion(valor)
+                            title=ft.Text(str(nombre_mp), style=self.estilo_texto()),
+                            on_click=lambda ev, valor=nombre_mp, id=id_mp: self.seleccionar_opcion(valor, id)
                         ),
                     )
                 )
         e.page.update()
-
-    def seleccionar_opcion(self, valor):
-        self.busqueda.value = valor
-        self.resultados.controls.clear()
-        self.busqueda.page.update()
+        
+    def guardar_cantidad_materia_prima(self, e):
+        if not self.materia_prima_seleccionada:
+            self.mostrar_snack_bar("Selecciona una materia prima")
+            return
+            
+        cantidad_texto = self.entry_cantidad.value.strip()
+        if not cantidad_texto:
+            self.mostrar_snack_bar("Ingresa una cantidad")
+            return
+        
+        try:
+            cantidad = float(cantidad_texto)
+        except ValueError:
+            self.mostrar_snack_bar("La cantidad debe ser un número")
+            return
+            
+        controlador = CargarMateriaPrima()
+        try:
+            resultado = controlador.actualizar_stock_materia_prima(
+                self.materia_prima_seleccionada, 
+                cantidad
+            )
+            
+            if resultado:
+                self.mostrar_snack_bar(f"Cantidad actualizada correctamente")
+                self.busqueda.value = ""
+                self.entry_cantidad.value = ""
+                self.materia_prima_seleccionada = None
+                self.resultados.controls.clear()
+                self.page.update()
+            else:
+                self.mostrar_snack_bar("Error al actualizar la cantidad")
+        finally:
+            controlador.cerrar_conexion()
 
 
     def armar_vista(self):
@@ -73,16 +120,23 @@ class vista_carga_mp(configuracion_pantalla):
         )
 
         materia_prima_dropdown = self.dropdown_materia_prima()
-        entry1 = ft.TextField(label="Cantidad",focused_border_color="#545454", width=300,label_style=self.estilo_texto())
+        
+        self.entry_cantidad = ft.TextField(
+            label="Cantidad",
+            focused_border_color="#545454", 
+            width=300,
+            label_style=self.estilo_texto(),
+            text_style=self.estilo_texto()
+        )
 
-        boton_guardar = ft.ElevatedButton("Guardar", width=100, style=self.estilo_de_botones())
+        boton_guardar = ft.ElevatedButton("Guardar", width=100, style=self.estilo_de_botones(),on_click=self.guardar_cantidad_materia_prima)
 
         container_principal = ft.Container(
             content=ft.Column(
                 controls=[
                     materia_prima_dropdown,
                     ft.Container(height=10),
-                    entry1,
+                    self.entry_cantidad,
                     ft.Container(height=10),
                     boton_guardar
                 ],

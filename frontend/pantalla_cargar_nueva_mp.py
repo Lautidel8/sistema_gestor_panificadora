@@ -54,7 +54,16 @@ class vista_carga_mp_nueva(configuracion_pantalla):
 
         radio_group = ft.RadioGroup(
             content=ft.ListView(
-                controls=[ft.Radio(value=mp,active_color="#454444", label=mp,label_style=self.estilo_texto()) for mp in materias_primas],
+                controls=[
+                            ft.Radio(
+                                # Usamos el nombre como value en lugar del ID
+                                value=mp[1],
+                                active_color="#454444",
+                                label=f"{mp[1]}",
+                                label_style=self.estilo_texto()
+                            )
+                            for mp in materias_primas
+                        ],
                 expand=True,
                 spacing=5,
                 auto_scroll=False,
@@ -151,6 +160,7 @@ class vista_carga_mp_nueva(configuracion_pantalla):
             width=300,
             options=opciones_unidades,
             label_style=self.estilo_texto(),
+            text_style=self.estilo_texto()
         )
 
         boton_guardar = ft.ElevatedButton(

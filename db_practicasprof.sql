@@ -14,8 +14,9 @@ CREATE TABLE unidad (
 
 CREATE TABLE MateriaPrima (
     id_materia_prima INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_mp VARCHAR(100) NOT NULL,
+    nombre_materia_prima VARCHAR(100) NOT NULL,
     distribuidor VARCHAR(100) NOT NULL,
+    stock DECIMAL(10,2) NOT NULL,
     id_unidad INT NOT NULL,
     FOREIGN KEY (id_unidad) REFERENCES unidad(id_unidad)
 ) ENGINE=InnoDB;
