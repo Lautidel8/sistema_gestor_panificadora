@@ -11,7 +11,7 @@ class vista_carga_mp(configuracion_pantalla):
         self.resultados = ft.Column(scroll="auto", height=80, spacing=0)
         self.materias_primas = []
         self.busqueda = None
-        self.materia_prima_seleccionada = None #guarda el id
+        self.materia_prima_seleccionada = None
         self.entry_cantidad = None
         self.config_page()
         self.armar_vista()
@@ -91,7 +91,7 @@ class vista_carga_mp(configuracion_pantalla):
         controlador = CargarMateriaPrima()
         try:
             resultado = controlador.actualizar_stock_materia_prima(
-                self.materia_prima_seleccionada, 
+                self.materia_prima_seleccionada,
                 cantidad
             )
             

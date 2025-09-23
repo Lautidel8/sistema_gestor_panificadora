@@ -29,7 +29,7 @@ CREATE TABLE Producto (
 ) ENGINE=InnoDB;
 
 
-CREATE TABLE MateriaPrima_producto (
+CREATE TABLE MateriaPrima_Producto (
     id_producto INT NOT NULL,
     id_materia_prima INT NOT NULL,
     cantidad DECIMAL(10,2) NOT NULL,

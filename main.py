@@ -3,6 +3,7 @@ from frontend.pantalla_login import PantallaLogin
 from frontend.pantalla_principal import vista_principal
 from frontend.pantalla_cargar_materia_prima import vista_carga_mp
 from frontend.pantalla_cargar_nueva_mp import vista_carga_mp_nueva
+from frontend.pantalla_controlar_stock import vista_controlar_stock
 
 def main(page: ft.Page):
     
@@ -23,6 +24,9 @@ def main(page: ft.Page):
         elif page.route == "/vista_carga_mp_nueva":
             vista_carga_mp_nueva(page)
             
+        elif page.route == "/vista_controlar_stock":
+            vista_controlar_stock(page)
+
         page.update()
 
     page.on_route_change = cambiar_pantalla
