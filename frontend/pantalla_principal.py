@@ -270,11 +270,11 @@ class vista_principal(configuracion_pantalla):
         
         titulo_row = ft.Row(
             expand=True,
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,   # título a la izquierda, botones a la derecha
-            vertical_alignment=ft.CrossAxisAlignment.CENTER, # centra verticalmente título y botones
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
                 texto_principal,
-                ft.Row(                                      # fila interna para separar botones
+                ft.Row(
                     spacing=10,
                     controls=[filtro_grilla,texto_modificar_pedido, boton_modificar_pedido, texto_cargar_pedido, boton_cargar_pedido]
                 )
