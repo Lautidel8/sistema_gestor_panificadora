@@ -198,7 +198,8 @@ class vista_principal(configuracion_pantalla):
         boton_cargar_producto = ft.ElevatedButton(
             "Cargar Producto",
             width=100,
-            style=self.estilo_de_botones()
+            style=self.estilo_de_botones(),
+            on_click=lambda e: self.page.go("/vista_cargar_producto")
         )
                 
         boton_control_stock_mp = ft.ElevatedButton(

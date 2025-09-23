@@ -29,7 +29,7 @@ class vista_carga_mp(configuracion_pantalla):
         self.busqueda = ft.TextField(
             label="Buscar Materia Prima",
             width=300,
-            on_change=self.filtrar_opciones,  # filtra en cada tecla
+            on_change=self.filtrar_opciones,
             border_color="#37373A",
             label_style=self.estilo_texto(),
             focused_border_color="#545454",
