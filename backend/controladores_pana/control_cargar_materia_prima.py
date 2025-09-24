@@ -15,6 +15,17 @@ class CargarMateriaPrima:
             print("Error al obtener unidades:", e)
             return []
 
+    def obtener_nombre_unidad(self, id_unidad):
+        try:
+            self.cursor.execute("SELECT nombre FROM unidad WHERE id_unidad = %s", (id_unidad,))
+            resultado = self.cursor.fetchone()
+            if resultado:
+                return resultado[0]
+            return None
+        except Exception as e:
+            print("Error al obtener nombre de unidad:", e)
+            return None
+
     def cargar_materia_prima(self, nombre, distribuidor, id_unidad):
 
         try:
@@ -45,7 +56,11 @@ class CargarMateriaPrima:
     
     def listar_materias_primas(self):
         try:
-            self.cursor.execute("SELECT id_materia_prima, nombre_materia_prima, stock FROM MateriaPrima")
+            
+            self.cursor.execute("""
+                SELECT id_materia_prima, nombre_materia_prima, id_unidad, stock 
+                FROM MateriaPrima
+            """)
             return self.cursor.fetchall()
         except Exception as e:
             print("Error al listar materias primas:", e)

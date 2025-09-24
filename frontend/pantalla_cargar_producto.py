@@ -10,7 +10,7 @@ class vista_cargar_producto(configuracion_pantalla):
         self.resultados = ft.Column(scroll="auto", height=80, spacing=0)
         self.materias_primas = []
         self.busqueda = None
-        self.materias_primas_seleccionadas = []  # Lista para almacenar todas las MP seleccionadas
+        self.materias_primas_seleccionadas = []
         self.config_page()
         self.cargar_materias_primas() 
         self.armar_vista()
@@ -29,7 +29,6 @@ class vista_cargar_producto(configuracion_pantalla):
 
         texto = e.control.value.lower()
         self.resultados.controls.clear()
-        
         
         for mp in self.materias_primas:
 
@@ -52,8 +51,30 @@ class vista_cargar_producto(configuracion_pantalla):
         e.page.update()
     
     def seleccionar_opcion(self, valor, id_mp):
+        unidad = "unidad"
+        
+        for mp in self.materias_primas:
+            if mp[0] == id_mp:
+                id_unidad = mp[2] if len(mp) > 2 else None
+
+                if id_unidad:
+                    from backend.controladores_pana.control_cargar_materia_prima import CargarMateriaPrima
+                    controlador = CargarMateriaPrima()
+                    try:
+                        nombre_unidad = controlador.obtener_nombre_unidad(id_unidad)
+                        if nombre_unidad:
+                            unidad = nombre_unidad
+                    finally:
+                        controlador.cerrar_conexion()
+                break
+        
         self.busqueda.value = valor
-        self.materia_prima_seleccionada = {"id": id_mp, "nombre": valor, "cantidad": None}
+        self.materia_prima_seleccionada = {
+            "id": id_mp, 
+            "nombre": valor, 
+            "cantidad": None,
+            "unidad": unidad
+        }
         self.resultados.controls.clear()
         self.busqueda.page.update()
     
@@ -72,7 +93,6 @@ class vista_cargar_producto(configuracion_pantalla):
             
             self.materia_prima_seleccionada["cantidad"] = cantidad
             self.materias_primas_seleccionadas.append(self.materia_prima_seleccionada.copy())
-            
             self.actualizar_lista_mp_seleccionadas()
             
             self.busqueda.value = ""
@@ -93,7 +113,7 @@ class vista_cargar_producto(configuracion_pantalla):
             self.lista_mp_seleccionadas.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Text(f"{mp['nombre']}: {mp['cantidad']}", style=self.estilo_texto()),
+                        ft.Text(f"{mp['nombre']}: {mp['cantidad']} {mp['unidad']}", style=self.estilo_texto()),
                         ft.IconButton(
                             icon=ft.Icons.DELETE,
                             icon_color="#a72d2d",
@@ -205,6 +225,7 @@ class vista_cargar_producto(configuracion_pantalla):
         self.busqueda = ft.TextField(
             label="Buscar Materia Prima",
             hint_text="Ingrese materia prima",
+            hint_style=self.estilo_texto(),
             width=300,
             color="#37373A",
             border_color="#37373A",
@@ -213,10 +234,10 @@ class vista_cargar_producto(configuracion_pantalla):
             on_change=self.filtrar_opciones
         )
         
-        # Cantidad de materia prima
         self.entry_cantidad = ft.TextField(
             label="Cantidad",
             hint_text="Cantidad para la receta",
+            hint_style=self.estilo_texto(),
             width=300,
             color="#37373A",
             border_color="#37373A",
@@ -224,7 +245,6 @@ class vista_cargar_producto(configuracion_pantalla):
             label_style=ft.TextStyle(color="#37373A"),
         )
         
-        # Botón para agregar materia prima a la receta
         boton_agregar_mp = ft.ElevatedButton(
             "Agregar a Receta",
             width=150,
@@ -232,7 +252,6 @@ class vista_cargar_producto(configuracion_pantalla):
             on_click=self.agregar_materia_prima
         )
         
-        # Lista de materias primas seleccionadas
         titulo_mp = ft.Text("Materias Primas de la Receta:", style=self.estilo_texto())
         self.lista_mp_seleccionadas = ft.Column(
             spacing=5,
@@ -240,7 +259,6 @@ class vista_cargar_producto(configuracion_pantalla):
             scroll="auto"
         )
         
-        # Botón para guardar producto completo
         boton_guardar = ft.ElevatedButton(
             "Guardar Producto",
             width=200,
@@ -248,7 +266,6 @@ class vista_cargar_producto(configuracion_pantalla):
             on_click=self.guardar_producto
         )
         
-        # Contenedor para datos del producto
         container_producto = ft.Container(
             content=ft.Column(
                 controls=[
@@ -265,7 +282,6 @@ class vista_cargar_producto(configuracion_pantalla):
             width=350,
         )
         
-        # Contenedor para la receta
         container_receta = ft.Container(
             content=ft.Column(
                 controls=[
@@ -294,18 +310,15 @@ class vista_cargar_producto(configuracion_pantalla):
                             controls=[self.boton_volver()],
                             alignment=ft.MainAxisAlignment.START,
                         ),
-                        ft.Container(height=20),
                         ft.Row(
                             controls=[texto_carga_de_producto],
                             alignment=ft.MainAxisAlignment.CENTER,
                         ),
-                        ft.Container(height=20),
                         ft.Row(
                             controls=[container_producto, container_receta],
                             alignment=ft.MainAxisAlignment.CENTER,
                             spacing=20,
                         ),
-                        ft.Container(height=20),
                         ft.Row(
                             controls=[boton_guardar],
                             alignment=ft.MainAxisAlignment.CENTER,

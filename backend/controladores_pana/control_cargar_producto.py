@@ -28,7 +28,7 @@ class control_cargar_producto:
             self.cursor.execute("SELECT MAX(id_producto) FROM Producto")
             resultado = self.cursor.fetchone()
             if resultado[0] is None:
-                return 1  # Si no hay productos, empezar con 1
+                return 1
             return resultado[0] + 1
         except Exception as e:
             print("Error al obtener último ID:", e)
