@@ -7,31 +7,53 @@ class control_cargar_producto:
         self.conexion = conectar()
         self.cursor = self.conexion.cursor()
     
-def cargar_producto(self, nombre_producto, precio_unitario):
-    try:
-        self.cursor.execute(
-            "SELECT COUNT(*) FROM Producto WHERE LOWER(nombre_producto) = LOWER(%s)",
-            (nombre_producto,)
-        )
-        resultado = self.cursor.fetchone()
-        
-        if resultado[0] > 0:
+    def cargar_producto(self, nombre_producto, precio_unitario):
+        try:
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM Producto WHERE LOWER(nombre_producto) = LOWER(%s)",
+                (nombre_producto,)
+            )
+            resultado = self.cursor.fetchone()
+            
+            if resultado[0] > 0:
+                return False
+
+            id_producto = self.obtener_ultimo_id_producto()
+
+            # Usar explícitamente el ID calculado
+            self.cursor.execute(
+                "INSERT INTO Producto (id_producto, nombre_producto, precio_unitario) VALUES (%s, %s, %s)",
+                (id_producto, nombre_producto, precio_unitario)
+            )
+            
+            self.conexion.commit()
+            return id_producto
+            
+        except Exception as e:
+            print("Error al cargar producto:", e)
+            self.conexion.rollback()
             return False
-
-        id_producto = self.obtener_ultimo_id_producto()
-
-        self.cursor.execute(
-            "INSERT INTO Producto (nombre_producto, precio_unitario) VALUES (%s, %s)",
-            (nombre_producto, precio_unitario)
-        )
         
-        self.conexion.commit()
-        return id_producto
+    def eliminar_producto(self, nombre_producto):
+        try:
+            self.cursor.execute(
+                "DELETE FROM Producto WHERE nombre_producto = %s",
+                (nombre_producto,)
+            )
+            self.conexion.commit()
+            return True
+        except Exception as e:
+            print("Error al eliminar producto:", e)
+            self.conexion.rollback()
+            return False    
         
-    except Exception as e:
-        print("Error al cargar producto:", e)
-        self.conexion.rollback()
-        return False
+    def listar_productos(self):
+        try:
+            self.cursor.execute("SELECT id_producto, nombre_producto FROM Producto")
+            return self.cursor.fetchall()
+        except Exception as e:
+            print("Error al obtener productos:", e)
+            return []
     
     def agregar_materia_prima_a_producto(self, id_producto, id_materia_prima, cantidad):
 

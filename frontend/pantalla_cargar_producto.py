@@ -191,6 +191,84 @@ class vista_cargar_producto(configuracion_pantalla):
         self.materia_prima_seleccionada = None
         self.actualizar_lista_mp_seleccionadas()
         self.page.update()
+        
+    def mostrar_lista_productos(self, e):
+        controlador = control_cargar_producto()
+        try:
+            productos = controlador.listar_productos()
+        finally:
+            controlador.cerrar_conexion()
+
+        if not productos:
+            self.mostrar_snack_bar("No hay productos registrados.")
+            return
+
+        seleccion = {"nombre": None}
+
+        radio_group = ft.RadioGroup(
+            content=ft.ListView(
+                controls=[
+                            ft.Radio(
+                                value=prd[1],
+                                active_color="#454444",
+                                label=f"{prd[1]}",
+                                label_style=self.estilo_texto()
+                            )
+                            for prd in productos
+                        ],
+                expand=True,
+                spacing=5,
+                auto_scroll=False,
+            ),
+            on_change=lambda e: seleccion.update({"nombre": e.control.value}),
+        )
+        
+        ventana_eliminar_producto = ft.AlertDialog(
+                modal=True,
+                bgcolor="#a72d2d",
+                title=ft.Text("Selecciona el producto a eliminar",style=self.estilo_texto(), size=15),
+                    content=ft.Container(
+                        content=ft.Column(
+                            controls=[radio_group],
+                            scroll="auto",
+                            height=300,
+                        ),
+                        width=300,
+                        
+                    ),
+                actions=[
+                    ft.TextButton("Cancelar",style=self.estilo_de_botones(), on_click=lambda e: self.cerrar_dialogo(ventana_eliminar_producto)),
+                    ft.TextButton(
+                        "Eliminar",
+                        style=self.estilo_de_botones(),
+                        on_click=lambda e: self.eliminar_producto_seleccionado(ventana_eliminar_producto, seleccion["nombre"])
+                    ),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+
+        self.page.overlay.clear()
+        self.page.overlay.append(ventana_eliminar_producto)
+        ventana_eliminar_producto.open = True
+        self.page.update()
+    
+    def eliminar_producto_seleccionado(self, dialogo, nombre):
+        if not nombre:
+            self.mostrar_snack_bar("Selecciona un Producto.")
+            return
+        controlador = control_cargar_producto()
+        try:
+            resultado = controlador.eliminar_producto(nombre)
+            if resultado:
+                self.mostrar_snack_bar("Producto eliminado.")
+            else:
+                self.mostrar_snack_bar("Error al eliminar producto.")
+        finally:
+            controlador.cerrar_conexion()
+        dialogo.open = False
+        self.page.update()
+
+    
     
     def armar_vista(self):
         self.page.controls.clear()
@@ -267,6 +345,25 @@ class vista_cargar_producto(configuracion_pantalla):
             on_click=self.guardar_producto
         )
         
+        boton_eliminar_producto = ft.ElevatedButton(
+            width=180,
+            height=35,
+            style=ft.ButtonStyle(
+                color={ft.ControlState.DEFAULT: "#37373A", ft.ControlState.HOVERED: "#606065"},
+                bgcolor={ft.ControlState.DEFAULT: "#a72d2d", ft.ControlState.HOVERED: "#b84444"},
+                shape={"": ft.RoundedRectangleBorder(radius=4)},
+                padding=15
+            ),
+            content=ft.Row(
+                controls=[
+                    ft.Icon(name=ft.Icons.HIGHLIGHT_REMOVE_SHARP),
+                    ft.Text("Eliminar Producto")
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            on_click=self.mostrar_lista_productos
+        )
+        
         container_producto = ft.Container(
             content=ft.Column(
                 controls=[
@@ -313,8 +410,9 @@ class vista_cargar_producto(configuracion_pantalla):
                             alignment=ft.MainAxisAlignment.START,
                         ),
                         ft.Row(
-                            controls=[texto_carga_de_producto],
+                            controls=[texto_carga_de_producto,boton_eliminar_producto],
                             alignment=ft.MainAxisAlignment.CENTER,
+                            spacing=150,
                         ),
                         ft.Container(
                             bgcolor="#37373A",
