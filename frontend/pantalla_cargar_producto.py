@@ -134,8 +134,8 @@ class vista_cargar_producto(configuracion_pantalla):
         self.actualizar_lista_mp_seleccionadas()
     
     def guardar_producto(self, e):
-        nombre_producto = self.entrada_nombre_producto.value.strip() if hasattr(self, 'entrada_nombre_producto') else ""
-        precio_texto = self.entrada_precio.value.strip() if hasattr(self, 'entrada_precio') else ""
+        nombre_producto = self.entrada_nombre_producto.value.strip()
+        precio_texto = self.entrada_precio.value.strip()
         
         if not nombre_producto:
             self.mostrar_snack_bar("Ingresa un nombre para el producto")
@@ -151,14 +151,14 @@ class vista_cargar_producto(configuracion_pantalla):
             
         try:
             precio = float(precio_texto)
-
+            
             controlador = control_cargar_producto()
             try:
-                id_producto = controlador.obtener_ultimo_id_producto()
-                
-                resultado = controlador.cargar_producto(id_producto, nombre_producto, precio)
+                resultado = controlador.cargar_producto(nombre_producto, precio)
                 
                 if resultado:
+                    id_producto = resultado
+                    
                     for mp in self.materias_primas_seleccionadas:
                         controlador.agregar_materia_prima_a_producto(
                             id_producto, 
@@ -169,9 +169,10 @@ class vista_cargar_producto(configuracion_pantalla):
                     self.mostrar_snack_bar(f"Producto '{nombre_producto}' guardado con éxito")
                     self.limpiar_formulario()
                 else:
-                    self.mostrar_snack_bar("Error al guardar el producto")
+                    self.mostrar_snack_bar("Ya existe un producto con ese nombre")
             finally:
                 controlador.cerrar_conexion()
+                
                 
         except ValueError:
             self.mostrar_snack_bar("El precio debe ser un número")
@@ -197,7 +198,7 @@ class vista_cargar_producto(configuracion_pantalla):
         texto_carga_de_producto = ft.Text(
             "Cargar Producto y Receta",
             style=self.estilo_texto(),
-            size=20
+            size=30
         )
         
         self.entrada_nombre_producto = ft.TextField(
@@ -255,7 +256,7 @@ class vista_cargar_producto(configuracion_pantalla):
         titulo_mp = ft.Text("Materias Primas de la Receta:", style=self.estilo_texto())
         self.lista_mp_seleccionadas = ft.Column(
             spacing=5,
-            height=150,
+            height=120,
             scroll="auto"
         )
         
@@ -299,6 +300,7 @@ class vista_cargar_producto(configuracion_pantalla):
             padding=ft.padding.all(20),
             bgcolor="#fdd0b5",
             border_radius=10,
+            height=450,
             width=350,
         )
         
@@ -314,10 +316,16 @@ class vista_cargar_producto(configuracion_pantalla):
                             controls=[texto_carga_de_producto],
                             alignment=ft.MainAxisAlignment.CENTER,
                         ),
-                        ft.Row(
-                            controls=[container_producto, container_receta],
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            spacing=20,
+                        ft.Container(
+                            bgcolor="#37373A",
+                            border_radius=10,
+                            padding=20,
+                            width=800,
+                            content=ft.Row(
+                                controls=[container_producto, container_receta],
+                                alignment=ft.MainAxisAlignment.CENTER,
+                                spacing=20,
+                            )
                         ),
                         ft.Row(
                             controls=[boton_guardar],
@@ -327,7 +335,7 @@ class vista_cargar_producto(configuracion_pantalla):
                     alignment=ft.MainAxisAlignment.START,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
-                padding=20,
+                padding=0,
                 expand=True
             )
         )

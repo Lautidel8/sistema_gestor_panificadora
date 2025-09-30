@@ -27,8 +27,16 @@ class CargarMateriaPrima:
             return None
 
     def cargar_materia_prima(self, nombre, distribuidor, id_unidad):
-
         try:
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM MateriaPrima WHERE LOWER(nombre_materia_prima) = LOWER(%s)",
+                (nombre,)
+            )
+            resultado = self.cursor.fetchone()
+            
+            if resultado[0] > 0:
+                return False
+            
             self.cursor.execute(
                 "INSERT INTO MateriaPrima (nombre_materia_prima, distribuidor, id_unidad, stock) VALUES (%s, %s, %s, %s)",
                 (nombre, distribuidor, id_unidad, 0)

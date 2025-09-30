@@ -7,6 +7,31 @@ class control_cargar_producto:
         self.conexion = conectar()
         self.cursor = self.conexion.cursor()
     
+def cargar_producto(self, nombre_producto, precio_unitario):
+    try:
+        self.cursor.execute(
+            "SELECT COUNT(*) FROM Producto WHERE LOWER(nombre_producto) = LOWER(%s)",
+            (nombre_producto,)
+        )
+        resultado = self.cursor.fetchone()
+        
+        if resultado[0] > 0:
+            return False
+
+        id_producto = self.obtener_ultimo_id_producto()
+
+        self.cursor.execute(
+            "INSERT INTO Producto (nombre_producto, precio_unitario) VALUES (%s, %s)",
+            (nombre_producto, precio_unitario)
+        )
+        
+        self.conexion.commit()
+        return id_producto
+        
+    except Exception as e:
+        print("Error al cargar producto:", e)
+        self.conexion.rollback()
+        return False
     
     def agregar_materia_prima_a_producto(self, id_producto, id_materia_prima, cantidad):
 
@@ -30,6 +55,7 @@ class control_cargar_producto:
             if resultado[0] is None:
                 return 1
             return resultado[0] + 1
+        
         except Exception as e:
             print("Error al obtener último ID:", e)
             return 1
