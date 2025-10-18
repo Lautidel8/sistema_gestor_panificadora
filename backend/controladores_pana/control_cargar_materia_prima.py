@@ -50,6 +50,21 @@ class CargarMateriaPrima:
 
     def eliminar_materia_prima(self, nombre):
         try:
+            # Primero verificar si la materia prima está asociada a algún producto
+            self.cursor.execute("""
+                SELECT COUNT(*) FROM MateriaPrima_Producto mp 
+                JOIN MateriaPrima m ON mp.id_materia_prima = m.id_materia_prima
+                WHERE m.nombre_materia_prima = %s
+            """, (nombre,))
+            
+            resultado = self.cursor.fetchone()
+            
+            if resultado and resultado[0] > 0:
+                # La materia prima está asociada a productos
+                print("No se puede eliminar la materia prima ya que está asignada a un producto")
+                return "producto_asociado"  # Retornar un código específico en lugar de False
+            
+            # Si no está asociada, proceder con la eliminación
             self.cursor.execute(
                 "DELETE FROM MateriaPrima WHERE nombre_materia_prima = %s",
                 (nombre,)
@@ -60,14 +75,21 @@ class CargarMateriaPrima:
         except Exception as e:
             print("Error al eliminar materia prima:", e)
             self.conexion.rollback()
+            
+            # Detectar el error específico de clave foránea
+            if isinstance(e, Exception) and "foreign key constraint fails" in str(e).lower():
+                return "producto_asociado"
+            
             return False
     
     def listar_materias_primas(self):
         try:
-            
+            # Incluir la unidad en la consulta usando un JOIN
             self.cursor.execute("""
-                SELECT id_materia_prima, nombre_materia_prima, id_unidad, stock 
-                FROM MateriaPrima
+                SELECT m.id_materia_prima, m.nombre_materia_prima, m.stock, u.nombre as nombre_unidad
+                FROM MateriaPrima m
+                LEFT JOIN unidad u ON m.id_unidad = u.id_unidad
+                ORDER BY m.nombre_materia_prima
             """)
             return self.cursor.fetchall()
         except Exception as e:

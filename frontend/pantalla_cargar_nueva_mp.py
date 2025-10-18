@@ -113,8 +113,10 @@ class vista_carga_mp_nueva(configuracion_pantalla):
         controlador = CargarMateriaPrima()
         try:
             resultado = controlador.eliminar_materia_prima(nombre)
-            if resultado:
+            if resultado == True:
                 self.mostrar_snack_bar("Materia prima eliminada.")
+            elif resultado == "producto_asociado":
+                self.mostrar_snack_bar("No se puede eliminar la materia prima ya que está asignada a un producto")
             else:
                 self.mostrar_snack_bar("Error al eliminar materia prima.")
         finally:

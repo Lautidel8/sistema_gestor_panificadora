@@ -36,16 +36,38 @@ class control_cargar_producto:
         
     def eliminar_producto(self, nombre_producto):
         try:
+            # Primero obtener el ID del producto
             self.cursor.execute(
-                "DELETE FROM Producto WHERE nombre_producto = %s",
+                "SELECT id_producto FROM Producto WHERE nombre_producto = %s",
                 (nombre_producto,)
             )
+            resultado = self.cursor.fetchone()
+            
+            if not resultado:
+                print(f"No se encontró el producto '{nombre_producto}'")
+                return False
+                
+            id_producto = resultado[0]
+            
+            # Primero eliminar las relaciones en MateriaPrima_Producto
+            self.cursor.execute(
+                "DELETE FROM MateriaPrima_Producto WHERE id_producto = %s",
+                (id_producto,)
+            )
+            
+            # Luego eliminar el producto
+            self.cursor.execute(
+                "DELETE FROM Producto WHERE id_producto = %s",
+                (id_producto,)
+            )
+            
             self.conexion.commit()
             return True
+            
         except Exception as e:
-            print("Error al eliminar producto:", e)
+            print(f"Error al eliminar producto: {e}")
             self.conexion.rollback()
-            return False    
+            return False   
         
     def listar_productos(self):
         try:

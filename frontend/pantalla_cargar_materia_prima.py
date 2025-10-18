@@ -23,7 +23,6 @@ class vista_carga_mp(configuracion_pantalla):
         finally:
             controlador.cerrar_conexion()
 
-
         self.materias_primas = materias_primas
 
         self.busqueda = ft.TextField(
@@ -37,13 +36,17 @@ class vista_carga_mp(configuracion_pantalla):
         )
 
         self.resultados.controls.clear()
-
         return ft.Column([self.busqueda, self.resultados])
 
-    def seleccionar_opcion(self, valor,id_mp=None):
+    def seleccionar_opcion(self, valor, id_mp=None, unidad=None):
         self.busqueda.value = valor
         self.materia_prima_seleccionada = id_mp
+        self.unidad_seleccionada = unidad
         self.resultados.controls.clear()
+        
+        if hasattr(self, 'entry_cantidad') and self.entry_cantidad:
+            self.entry_cantidad.label = f"Cantidad ({unidad})"
+            
         self.busqueda.page.update()
 
     def filtrar_opciones(self, e):
@@ -54,10 +57,17 @@ class vista_carga_mp(configuracion_pantalla):
             if isinstance(item, int) or isinstance(item, str):
                 id_mp = item
                 nombre_mp = str(item)
+                unidad = ""  # No hay unidad disponible
             else:
                 id_mp = item[0]
                 nombre_mp = item[1]
                 
+                # Obtener la unidad (puede ser directamente de la consulta o necesitas buscarla)
+                unidad = ""
+                if len(item) >= 4:  # Si hay al menos 4 elementos en la tupla
+                    # El último elemento es el nombre de la unidad
+                    unidad = item[3] if item[3] else ""
+                    
             if texto in str(nombre_mp).lower():
                 self.resultados.controls.append(
                     ft.Container(
@@ -66,7 +76,11 @@ class vista_carga_mp(configuracion_pantalla):
                         border=ft.border.all(1, "#37373A"),
                         content=ft.ListTile(
                             title=ft.Text(str(nombre_mp), style=self.estilo_texto()),
-                            on_click=lambda ev, valor=nombre_mp, id=id_mp: self.seleccionar_opcion(valor, id)
+                            subtitle=ft.Text(f"Unidad: {unidad}" if unidad else "", 
+                                            style=self.estilo_texto(), 
+                                            size=12),
+                            on_click=lambda ev, valor=nombre_mp, id=id_mp, u=unidad: 
+                                    self.seleccionar_opcion(valor, id, u)
                         ),
                     )
                 )
@@ -128,6 +142,7 @@ class vista_carga_mp(configuracion_pantalla):
             label_style=self.estilo_texto(),
             text_style=self.estilo_texto()
         )
+        
 
         boton_guardar = ft.ElevatedButton("Guardar", width=100, style=self.estilo_de_botones(),on_click=self.guardar_cantidad_materia_prima)
 

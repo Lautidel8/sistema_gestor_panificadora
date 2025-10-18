@@ -173,6 +173,7 @@ class vista_principal(configuracion_pantalla):
             width=1100,
             border_radius=10,
             padding=0,
+            border=ft.border.all(1, "#37373A"),
         )
 
         logo_pana = ft.Image(
@@ -208,7 +209,6 @@ class vista_principal(configuracion_pantalla):
             style=self.estilo_de_botones(),
             on_click=lambda e: self.page.go("/vista_controlar_stock")
         )
-
         
         barra_navegacion = ft.Container(
             border_radius=10,
@@ -230,6 +230,7 @@ class vista_principal(configuracion_pantalla):
                 spacing=20,
                 expand=True
             ),
+            border=ft.border.all(1, "#37373A"),
         )
         
         texto_principal = ft.Text(
@@ -237,7 +238,6 @@ class vista_principal(configuracion_pantalla):
             size=30,
             style= self.estilo_texto()
         )       
-        
         
         texto_modificar_pedido = ft.Text(
             "Modificar Pedidos",

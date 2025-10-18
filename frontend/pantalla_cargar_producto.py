@@ -269,7 +269,6 @@ class vista_cargar_producto(configuracion_pantalla):
         self.page.update()
 
     
-    
     def armar_vista(self):
         self.page.controls.clear()
         
