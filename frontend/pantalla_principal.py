@@ -111,7 +111,233 @@ class vista_principal(configuracion_pantalla):
             self.page.update()
             
             self.mostrar_snack_bar("Filtro limpiado, mostrando todos los pedidos")
+            
+            
+    def mostrar_ventana_cargar_pedido(self):
+        
+        import flet as ft
+        from datetime import date
+        from backend.controladores_pana.controlador_cargar_pedido import CargarPedido
 
+        estado = {
+            "items": [],               
+            "productos": [],           
+            "total": 0.0,
+        }
+
+        controlador = CargarPedido()
+        try:
+            estado["productos"] = controlador.seleccionar_producto()
+        except Exception as e:
+            print(f"Error cargando productos: {e}")
+            estado["productos"] = []
+
+        prod_por_id = {str(p[0]): p for p in estado["productos"]}
+
+
+        tf_nombre = ft.TextField(label="Nombre del pedido", width=250, label_style=self.estilo_texto(), text_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto())
+        tf_cliente = ft.TextField(label="Cliente", width=250, label_style=self.estilo_texto(), text_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto())
+        fecha_label = ft.Text(str(date.today()), style=self.estilo_texto())
+        date_picker = ft.DatePicker(on_change=lambda e: (setattr(fecha_label, "value", str(e.control.value)), self.page.update()))
+
+        dd_productos = ft.Dropdown(
+            label="Producto",
+            width=320,
+            options=[
+                ft.dropdown.Option(text=f"{p[1]} - ${float(p[2]):,.2f}", key=str(p[0])) for p in estado["productos"]
+            ],
+            label_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto()
+        )
+        tf_cantidad = ft.TextField(label="Cantidad", width=120, keyboard_type=ft.KeyboardType.NUMBER, label_style=self.estilo_texto(), text_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto())
+
+        lista_items = ft.Column(spacing=6, scroll="auto", height=180)
+        txt_total = ft.Text("Total: $ 0.00", weight="bold", style=self.estilo_texto())
+
+        def recalcular_total():
+            total = 0.0
+            for it in estado["items"]:
+                total += float(it["precio"]) * float(it["cantidad"])
+            estado["total"] = total
+            txt_total.value = f"Total: $ {total:,.2f}"
+
+        def actualizar_lista():
+            lista_items.controls.clear()
+            for idx, it in enumerate(estado["items"]):
+                fila = ft.Container(
+                    bgcolor="#fcc8a9",
+                    border_radius=6,
+                    padding=8,
+                    content=ft.Row(
+                        controls=[
+                            ft.Text(f"{it['nombre']} x {it['cantidad']} u", style=self.estilo_texto()),
+                            ft.Text(f"$ {float(it['precio']):,.2f}", style=self.estilo_texto()),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE,
+                                icon_color="#a72d2d",
+                                tooltip="Quitar",
+                                on_click=lambda e, i=idx: quitar_item(i),
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                )
+                lista_items.controls.append(fila)
+            recalcular_total()
+            self.page.update()
+
+        def quitar_item(idx):
+            if 0 <= idx < len(estado["items"]):
+                estado["items"].pop(idx)
+                actualizar_lista()
+
+        def agregar_item(e):
+            if not dd_productos.value:
+                self.mostrar_snack_bar("Selecciona un producto")
+                return
+            if not tf_cantidad.value or tf_cantidad.value.strip() == "":
+                self.mostrar_snack_bar("Ingresa una cantidad")
+                return
+            try:
+                cant = int(float(tf_cantidad.value))
+                if cant <= 0:
+                    raise ValueError
+            except ValueError:
+                self.mostrar_snack_bar("La cantidad debe ser un número positivo")
+                return
+
+            p = prod_por_id.get(dd_productos.value)
+            if not p:
+                self.mostrar_snack_bar("Producto inválido")
+                return
+
+            id_prod, nombre, precio = p[0], p[1], float(p[2])
+
+            # Verificar stock necesario según receta
+            ok, faltantes = controlador.verificar_cantidad_materia_prima(id_prod, cant)
+            if not ok:
+                msg = "Faltan insumos:\n" + "\n".join(
+                    [f"- {f['nombre']}: falta {f['faltante']:.2f}" for f in faltantes]
+                )
+                self.mostrar_snack_bar(msg)
+                return
+
+            estado["items"].append({
+                "id_producto": id_prod,
+                "nombre": nombre,
+                "cantidad": cant,
+                "precio": precio,
+            })
+            tf_cantidad.value = ""
+            dd_productos.value = None
+            actualizar_lista()
+
+        def guardar_pedido(e):
+            if not tf_nombre.value or not tf_cliente.value:
+                self.mostrar_snack_bar("Completa nombre y cliente")
+                return
+            if not estado["items"]:
+                self.mostrar_snack_bar("Agrega al menos un producto")
+                return
+
+            fecha_val = str(date.today()) if not date_picker.value else str(date_picker.value)
+            items_payload = [{"id_producto": it["id_producto"], "cantidad": it["cantidad"]} for it in estado["items"]]
+
+            res = controlador.cargar_pedido(
+                nombre_pedido=tf_nombre.value.strip(),
+                cliente=tf_cliente.value.strip(),
+                fecha_pedido=fecha_val,
+                items=items_payload,
+                estado_pedido="Pendiente",
+                id_gerente=None,
+            )
+
+            if res.get("ok"):
+                # refrescar grilla principal
+                try:
+                    self.cursor.execute("SELECT * FROM Pedido")
+                    self.pedidos_refresh = self.cursor.fetchall()
+                except Exception as ex:
+                    print(f"Error refrescando pedidos: {ex}")
+
+                self._refresh_table()
+                self.mostrar_snack_bar("Pedido cargado con éxito")
+                dlg.open = False
+                try:
+                    controlador.cerrar_conexion()
+                except Exception:
+                    pass
+                self.page.update()
+            else:
+                if "faltantes" in res:
+                    # Mensaje con faltantes agrupados por producto
+                    msg = "No hay stock suficiente para:\n"
+                    for idp, falt in res["faltantes"].items():
+                        # nombre producto
+                        nom = next((p[1] for p in estado["productos"] if p[0] == idp), f"Producto {idp}")
+                        msg += f"- {nom}:\n"
+                        for f in falt:
+                            msg += f"   · {f['nombre']}: falta {f['faltante']:.2f}\n"
+                    self.mostrar_snack_bar(msg)
+                else:
+                    self.mostrar_snack_bar("Error al cargar el pedido")
+
+        # Contenido del diálogo
+        contenido = ft.Container(
+            width=650,
+            content=ft.Column(
+                spacing=12,
+                controls=[
+                    ft.Row(
+                        controls=[
+                            ft.Text("Cargar nuevo pedido", size=16, weight="bold", style=self.estilo_texto()),
+                        ]
+                    ),
+                    ft.Row(
+                        controls=[
+                            tf_nombre,
+                            tf_cliente,
+                            ft.TextButton("Seleccionar fecha", style=self.estilo_de_botones(), on_click=lambda _: self.page.open(date_picker)),
+                            fecha_label,
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                    ft.Divider(),
+                    ft.Row(
+                        controls=[
+                            dd_productos,
+                            tf_cantidad,
+                            ft.ElevatedButton("Agregar producto", style=self.estilo_de_botones(), on_click=agregar_item),
+                        ],
+                        alignment=ft.MainAxisAlignment.START,
+                        spacing=10,
+                    ),
+                    lista_items,
+                    ft.Row(
+                        controls=[txt_total],
+                        alignment=ft.MainAxisAlignment.END,
+                    ),
+                ],
+            ),
+        )
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor="#fdd0b5",
+            title=ft.Text("Cargar pedido", style=self.estilo_texto(), size=15),
+            content=contenido,
+            actions=[
+                ft.TextButton("Cancelar", style=self.estilo_de_botones(), on_click=lambda e: (setattr(dlg, "open", False), controlador.cerrar_conexion(), self.page.update())),
+                ft.TextButton("Guardar", style=self.estilo_de_botones(), on_click=guardar_pedido),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        # Adjuntar DatePicker al overlay también
+        self.page.overlay.clear()
+        self.page.overlay.append(dlg)
+        self.page.overlay.append(date_picker)
+        dlg.open = True
+        self.page.update()
 
     def armar_vista(self):
         
@@ -257,7 +483,7 @@ class vista_principal(configuracion_pantalla):
         texto_cargar_pedido = ft.Text(
             "Cargar Pedidos",
             style=self.estilo_texto(),
-            size=15
+            size=15,
         )        
         
         boton_cargar_pedido = ft.ElevatedButton(
@@ -266,7 +492,8 @@ class vista_principal(configuracion_pantalla):
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
             width=100,
-            style=self.estilo_de_botones()
+            style=self.estilo_de_botones(),
+            on_click=lambda e: self.mostrar_ventana_cargar_pedido()
         )
         
         titulo_row = ft.Row(
