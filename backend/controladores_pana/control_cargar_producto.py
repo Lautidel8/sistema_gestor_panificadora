@@ -103,6 +103,39 @@ class control_cargar_producto:
         except Exception as e:
             print("Error al obtener último ID:", e)
             return 1
+        
+    def obtener_producto_por_id(self, id_producto: int):
+        try:
+            self.cursor.execute(
+                "SELECT id_producto, nombre_producto, precio_unitario FROM Producto WHERE id_producto = %s",
+                (id_producto,)
+            )
+            return self.cursor.fetchone()
+        except Exception as e:
+            print("Error al obtener producto:", e)
+            return None
+
+    def actualizar_producto(self, id_producto: int, nuevo_nombre: str, nuevo_precio: float):
+        try:
+            # Evitar duplicados por nombre (excluyendo el mismo producto)
+            self.cursor.execute(
+                "SELECT COUNT(*) FROM Producto WHERE LOWER(nombre_producto) = LOWER(%s) AND id_producto <> %s",
+                (nuevo_nombre, id_producto)
+            )
+            existe = self.cursor.fetchone()[0]
+            if existe > 0:
+                return "duplicado"
+
+            self.cursor.execute(
+                "UPDATE Producto SET nombre_producto = %s, precio_unitario = %s WHERE id_producto = %s",
+                (nuevo_nombre, nuevo_precio, id_producto)
+            )
+            self.conexion.commit()
+            return True
+        except Exception as e:
+            print("Error al actualizar producto:", e)
+            self.conexion.rollback()
+            return False
 
     def cerrar_conexion(self):
 

@@ -51,27 +51,33 @@ class vista_cargar_producto(configuracion_pantalla):
         e.page.update()
     
     def seleccionar_opcion(self, valor, id_mp):
-        unidad = "unidad"
-        
-        for mp in self.materias_primas:
-            if mp[0] == id_mp:
-                id_unidad = mp[2] if len(mp) > 2 else None
+        unidad = ""
+        id_unidad = None
 
-                if id_unidad:
-                    from backend.controladores_pana.control_cargar_materia_prima import CargarMateriaPrima
-                    controlador = CargarMateriaPrima()
-                    try:
-                        nombre_unidad = controlador.obtener_nombre_unidad(id_unidad)
-                        if nombre_unidad:
-                            unidad = nombre_unidad
-                    finally:
-                        controlador.cerrar_conexion()
-                break
-        
+        tupla = next((t for t in self.materias_primas if t[0] == id_mp), None)
+        if tupla:
+            if len(tupla) >= 4:
+                id_unidad = tupla[3]         
+            if len(tupla) >= 5 and tupla[4]:
+                unidad = tupla[4]           
+
+        if not unidad and id_unidad:
+            from backend.controladores_pana.control_cargar_materia_prima import CargarMateriaPrima
+            controlador = CargarMateriaPrima()
+            try:
+                nombre_unidad = controlador.obtener_nombre_unidad(id_unidad)
+                if nombre_unidad:
+                    unidad = nombre_unidad
+            finally:
+                controlador.cerrar_conexion()
+
+        if not unidad:
+            unidad = ""
+
         self.busqueda.value = valor
         self.materia_prima_seleccionada = {
-            "id": id_mp, 
-            "nombre": valor, 
+            "id": id_mp,
+            "nombre": valor,
             "cantidad": None,
             "unidad": unidad
         }
@@ -106,16 +112,17 @@ class vista_cargar_producto(configuracion_pantalla):
     def actualizar_lista_mp_seleccionadas(self):
         if not hasattr(self, 'lista_mp_seleccionadas'):
             return
-            
+
         self.lista_mp_seleccionadas.controls.clear()
-        
+
         for mp in self.materias_primas_seleccionadas:
+            unidad_txt = f" {mp['unidad']}" if mp.get('unidad') else ""
             self.lista_mp_seleccionadas.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Text(f"{mp['nombre']}: {mp['cantidad']} {mp['unidad']}", style=self.estilo_texto()),
+                        ft.Text(f"{mp['nombre']}: {mp['cantidad']}{unidad_txt}", style=self.estilo_texto()),
                         ft.IconButton(
-                            icon=ft.Icons.DELETE,
+                            icon=ft.Icons.DELETE,  # corregido
                             icon_color="#a72d2d",
                             tooltip="Eliminar",
                             on_click=lambda e, mp=mp: self.eliminar_mp_de_lista(mp)

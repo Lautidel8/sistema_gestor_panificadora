@@ -111,6 +111,7 @@ class vista_controlar_stock(configuracion_pantalla):
             width=1100,
             border_radius=10,
             padding=0,
+            border=ft.border.all(1, "#37373A"),
         )
 
         titulo = ft.Text(
@@ -159,7 +160,8 @@ class vista_controlar_stock(configuracion_pantalla):
                     scroll=ft.ScrollMode.AUTO
                 ),
                 padding=20,
-                expand=True
+                expand=True,
+                
             )
         )
         

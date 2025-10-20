@@ -111,6 +111,114 @@ class vista_principal(configuracion_pantalla):
             self.page.update()
             
             self.mostrar_snack_bar("Filtro limpiado, mostrando todos los pedidos")
+
+    def mostrar_ventana_modificar_producto(self):
+        from backend.controladores_pana.control_cargar_producto import control_cargar_producto
+
+        ctrl = control_cargar_producto()
+        try:
+            productos = ctrl.listar_productos()
+        except Exception as e:
+            print(f"Error listando productos: {e}")
+            productos = []
+
+        dd_productos = ft.Dropdown(
+            label="Producto",
+            width=320,
+            options=[ft.dropdown.Option(key=str(p[0]), text=p[1]) for p in productos],
+            label_style=self.estilo_texto(),
+            focused_border_color="#807E7E",
+            color="#37373A",
+            hint_style=self.estilo_texto(),
+        )
+        tf_nombre = ft.TextField(
+            label="Nuevo nombre",
+            width=320,
+            label_style=self.estilo_texto(),
+            text_style=self.estilo_texto(),
+            focused_border_color="#807E7E",
+            color="#37373A",
+            hint_style=self.estilo_texto(),
+        )
+        tf_precio = ft.TextField(
+            label="Precio unitario",
+            width=200,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            label_style=self.estilo_texto(),
+            text_style=self.estilo_texto(),
+            focused_border_color="#807E7E",
+            color="#37373A",
+            hint_style=self.estilo_texto(),
+        )
+
+        def cargar_datos_producto(e):
+            if not dd_productos.value:
+                return
+            pid = int(dd_productos.value)
+            prod = ctrl.obtener_producto_por_id(pid)
+            if prod:
+                tf_nombre.value = prod[1] or ""
+                tf_precio.value = str(prod[2] or "")
+                self.page.update()
+
+        dd_productos.on_change = cargar_datos_producto
+
+        def guardar_cambios(e):
+            if not dd_productos.value:
+                self.mostrar_snack_bar("Selecciona un producto")
+                return
+            if not tf_nombre.value.strip():
+                self.mostrar_snack_bar("Ingresa un nombre")
+                return
+            if not tf_precio.value.strip():
+                self.mostrar_snack_bar("Ingresa un precio")
+                return
+            try:
+                nuevo_precio = float(tf_precio.value)
+            except ValueError:
+                self.mostrar_snack_bar("El precio debe ser numérico")
+                return
+
+            pid = int(dd_productos.value)
+            res = ctrl.actualizar_producto(pid, tf_nombre.value.strip(), nuevo_precio)
+            if res is True:
+                self.mostrar_snack_bar("Producto actualizado")
+                dlg.open = False
+                self.page.update()
+            elif res == "duplicado":
+                self.mostrar_snack_bar("Ya existe un producto con ese nombre")
+            else:
+                self.mostrar_snack_bar("Error al actualizar producto")
+
+        contenido = ft.Container(
+            width=520,
+            content=ft.Column(
+                spacing=12,
+                controls=[
+                    ft.Text("Seleccione el prodcuto que desee modificar", size=16, weight="bold", style=self.estilo_texto()),
+                    dd_productos,
+                    tf_nombre,
+                    tf_precio,
+                ],
+            ),
+        )
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor="#fdd0b5",
+            title=ft.Text("Modificar producto", style=self.estilo_texto(), size=25),
+            content=contenido,
+            actions=[
+                ft.TextButton("Cancelar", style=self.estilo_de_botones(), on_click=lambda e: (setattr(dlg, "open", False), self.page.update())),
+                ft.TextButton("Guardar", style=self.estilo_de_botones(), on_click=guardar_cambios),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=lambda e: ctrl.cerrar_conexion(),
+        )
+
+        self.page.overlay.append(dlg)
+        dlg.open = True
+        self.page.update()    
             
             
     def mostrar_ventana_cargar_pedido(self):
@@ -212,7 +320,6 @@ class vista_principal(configuracion_pantalla):
 
             id_prod, nombre, precio = p[0], p[1], float(p[2])
 
-            # Verificar stock necesario según receta
             ok, faltantes = controlador.verificar_cantidad_materia_prima(id_prod, cant)
             if not ok:
                 msg = "Faltan insumos:\n" + "\n".join(
@@ -252,7 +359,6 @@ class vista_principal(configuracion_pantalla):
             )
 
             if res.get("ok"):
-                # refrescar grilla principal
                 try:
                     self.cursor.execute("SELECT * FROM Pedido")
                     self.pedidos_refresh = self.cursor.fetchall()
@@ -269,10 +375,8 @@ class vista_principal(configuracion_pantalla):
                 self.page.update()
             else:
                 if "faltantes" in res:
-                    # Mensaje con faltantes agrupados por producto
                     msg = "No hay stock suficiente para:\n"
                     for idp, falt in res["faltantes"].items():
-                        # nombre producto
                         nom = next((p[1] for p in estado["productos"] if p[0] == idp), f"Producto {idp}")
                         msg += f"- {nom}:\n"
                         for f in falt:
@@ -281,7 +385,7 @@ class vista_principal(configuracion_pantalla):
                 else:
                     self.mostrar_snack_bar("Error al cargar el pedido")
 
-        # Contenido del diálogo
+
         contenido = ft.Container(
             width=650,
             content=ft.Column(
@@ -289,7 +393,7 @@ class vista_principal(configuracion_pantalla):
                 controls=[
                     ft.Row(
                         controls=[
-                            ft.Text("Cargar nuevo pedido", size=16, weight="bold", style=self.estilo_texto()),
+                            ft.Text("Cargar un nuevo pedido", size=16, weight="bold", style=self.estilo_texto()),
                         ]
                     ),
                     ft.Row(
@@ -323,7 +427,7 @@ class vista_principal(configuracion_pantalla):
         dlg = ft.AlertDialog(
             modal=True,
             bgcolor="#fdd0b5",
-            title=ft.Text("Cargar pedido", style=self.estilo_texto(), size=15),
+            title=ft.Text("Cargar pedido", style=self.estilo_texto(), size=25),
             content=contenido,
             actions=[
                 ft.TextButton("Cancelar", style=self.estilo_de_botones(), on_click=lambda e: (setattr(dlg, "open", False), controlador.cerrar_conexion(), self.page.update())),
@@ -332,7 +436,6 @@ class vista_principal(configuracion_pantalla):
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
-        # Adjuntar DatePicker al overlay también
         self.page.overlay.clear()
         self.page.overlay.append(dlg)
         self.page.overlay.append(date_picker)
@@ -409,10 +512,11 @@ class vista_principal(configuracion_pantalla):
             fit=ft.ImageFit.CONTAIN
         )
 
-        boton_generar_reporte = ft.ElevatedButton(
-            "Generar Reporte",
+        boton_modificar_producto = ft.ElevatedButton(
+            "Modificar Producto",
             width=100,
-            style=self.estilo_de_botones()
+            style=self.estilo_de_botones(),
+            on_click=lambda e: self.mostrar_ventana_modificar_producto()
         )
         
         boton_cargar_materia_prima = ft.ElevatedButton(
@@ -449,7 +553,7 @@ class vista_principal(configuracion_pantalla):
                     boton_cargar_materia_prima,
                     boton_control_stock_mp,
                     boton_cargar_producto,
-                    boton_generar_reporte,                   
+                    boton_modificar_producto,
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,

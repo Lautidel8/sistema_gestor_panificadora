@@ -84,11 +84,14 @@ class CargarMateriaPrima:
     
     def listar_materias_primas(self):
         try:
-            # Incluir la unidad en la consulta usando un JOIN
             self.cursor.execute("""
-                SELECT m.id_materia_prima, m.nombre_materia_prima, m.stock, u.nombre as nombre_unidad
+                SELECT m.id_materia_prima,
+                       m.nombre_materia_prima,
+                       m.stock,
+                       m.id_unidad,
+                       u.nombre AS nombre_unidad
                 FROM MateriaPrima m
-                LEFT JOIN unidad u ON m.id_unidad = u.id_unidad
+                LEFT JOIN unidad u ON u.id_unidad = m.id_unidad
                 ORDER BY m.nombre_materia_prima
             """)
             return self.cursor.fetchall()
