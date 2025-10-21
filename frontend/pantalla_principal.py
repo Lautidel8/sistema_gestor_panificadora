@@ -320,7 +320,6 @@ class vista_principal(configuracion_pantalla):
                 self.mostrar_snack_bar("Ingresa una cantidad")
                 return
             try:
-                # normalizar coma -> punto
                 cant = float(tf_cantidad.value.replace(",", "."))
                 if cant <= 0:
                     raise ValueError
@@ -569,7 +568,6 @@ class vista_principal(configuracion_pantalla):
 
         redibujar_items()
 
-        # Sección para agregar nuevo producto
         dd_productos = ft.Dropdown(
             label="Producto",
             width=320,
@@ -629,7 +627,6 @@ class vista_principal(configuracion_pantalla):
             )
             return self.cursor.fetchall()
 
-        # Verifica stock solo para incrementos (delta > 0)
         def verificar_incrementos(deltas_por_producto: dict):
             requeridos_por_mp = {}
             nombres_mp = {}
@@ -649,7 +646,6 @@ class vista_principal(configuracion_pantalla):
                     faltantes.append({"nombre": nombres_mp[id_mp], "faltante": req - disponible})
             return (len(faltantes) == 0, faltantes)
 
-        # Ajusta stock por delta: delta>0 descuenta, delta<0 devuelve
         def ajustar_stock_por_delta(pid: int, delta: float):
             if abs(delta) <= 1e-9:
                 return
@@ -664,14 +660,12 @@ class vista_principal(configuracion_pantalla):
         
         def eliminar_pedido_confirmado(confirm_dlg):
             try:
-                # 1) Buscar detalle actual
                 self.cursor.execute(
                     "SELECT id_producto, cantidad FROM Detalle_pedido WHERE id_pedido = %s",
                     (id_pedido,)
                 )
-                detalle_actual = self.cursor.fetchall()  # [(id_producto, cantidad)]
+                detalle_actual = self.cursor.fetchall()
 
-                # 2) Devolver stock según receta
                 for id_prod, cant_prod in detalle_actual:
                     for id_mp, _, _, cant_unidad in receta_producto(id_prod):
                         devolver = float(cant_unidad) * float(cant_prod)
@@ -680,13 +674,13 @@ class vista_principal(configuracion_pantalla):
                             (devolver, id_mp)
                         )
 
-                # 3) Eliminar detalle y cabecera (respetando FKs)
+                
                 self.cursor.execute("DELETE FROM Detalle_pedido WHERE id_pedido = %s", (id_pedido,))
                 self.cursor.execute("DELETE FROM Pedido WHERE id_pedido = %s", (id_pedido,))
 
                 self.conexion.commit()
 
-                # 4) Refrescar UI
+                
                 if self.pedido_seleccionado and int(self.pedido_seleccionado[0]) == id_pedido:
                     self.pedido_seleccionado = None
 
@@ -732,7 +726,6 @@ class vista_principal(configuracion_pantalla):
             confirm_dlg.open = True
             self.page.update()
 
-        # === FALTABA: guardar_cambios ===
         def guardar_cambios(e):
             if not tf_nombre.value.strip():
                 self.mostrar_snack_bar("Ingresa un nombre de pedido")
@@ -742,7 +735,7 @@ class vista_principal(configuracion_pantalla):
                 return
             fecha_val = fecha_label.value or str(datetime.today().date())
 
-            # Construir cantidades nuevas
+
             nuevos = {}
             for it in estado["items"]:
                 if it["cantidad"] < 0:
@@ -762,12 +755,11 @@ class vista_principal(configuracion_pantalla):
                 return
 
             try:
-                # Cabecera
                 self.cursor.execute(
                     "UPDATE Pedido SET nombre_pedido=%s, estado_pedido=%s, cliente=%s, fecha_pedido=%s WHERE id_pedido=%s",
                     (tf_nombre.value.strip(), dd_estado.value, tf_cliente.value.strip(), fecha_val, id_pedido)
                 )
-                # Detalle + stock por delta
+
                 for pid in todos_ids:
                     delta = deltas[pid]
                     if pid in originales and pid in nuevos:
@@ -788,13 +780,13 @@ class vista_principal(configuracion_pantalla):
                     ajustar_stock_por_delta(pid, delta)
 
                 self.conexion.commit()
-                # Refrescar grilla
                 self.cursor.execute("SELECT * FROM Pedido")
                 self.pedidos_refresh = self.cursor.fetchall()
                 self._refresh_table()
                 self.mostrar_snack_bar("Pedido modificado con éxito")
                 dlg.open = False
                 self.page.update()
+                
             except Exception as ex:
                 self.conexion.rollback()
                 print(f"Error al modificar pedido: {ex}")
