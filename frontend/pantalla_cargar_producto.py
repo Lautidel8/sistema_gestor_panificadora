@@ -287,7 +287,7 @@ class vista_cargar_producto(configuracion_pantalla):
         
         self.entrada_nombre_producto = ft.TextField(
             label="Nombre del Producto",
-            hint_text="Ej: Pan de campo",
+            hint_text="Ej: Medialunas Saladas",
             hint_style=self.estilo_texto(),
             width=300,
             color="#37373A",
@@ -376,6 +376,7 @@ class vista_cargar_producto(configuracion_pantalla):
                     ft.Text("Datos del Producto", style=self.estilo_texto(), weight="bold"),
                     self.entrada_nombre_producto,
                     self.entrada_precio,
+                    ft.Text("(Atencion: El precio que cargues debe ser pensado para vender por unidad de producto)", style=self.estilo_texto(),size=10,color="#451515", weight="bold"),
                 ],
                 alignment=ft.MainAxisAlignment.START,
                 spacing=10,

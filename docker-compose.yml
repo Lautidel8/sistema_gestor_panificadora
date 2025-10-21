@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: practicasprof
+      MYSQL_DATABASE: Panaderia
     ports:
       - "3307:3306"
     volumes:

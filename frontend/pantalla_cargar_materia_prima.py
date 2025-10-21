@@ -54,20 +54,11 @@ class vista_carga_mp(configuracion_pantalla):
         self.resultados.controls.clear()
 
         for item in self.materias_primas:
-            if isinstance(item, int) or isinstance(item, str):
-                id_mp = item
-                nombre_mp = str(item)
-                unidad = ""  # No hay unidad disponible
-            else:
-                id_mp = item[0]
-                nombre_mp = item[1]
-                
-                # Obtener la unidad (puede ser directamente de la consulta o necesitas buscarla)
-                unidad = ""
-                if len(item) >= 4:  # Si hay al menos 4 elementos en la tupla
-                    # El último elemento es el nombre de la unidad
-                    unidad = item[3] if item[3] else ""
-                    
+            # Estructura: (id_materia_prima, nombre, stock, id_unidad, nombre_unidad)
+            id_mp = item[0]
+            nombre_mp = item[1]
+            nombre_unidad = item[4] if len(item) >= 5 and item[4] else ""
+
             if texto in str(nombre_mp).lower():
                 self.resultados.controls.append(
                     ft.Container(
@@ -76,11 +67,13 @@ class vista_carga_mp(configuracion_pantalla):
                         border=ft.border.all(1, "#37373A"),
                         content=ft.ListTile(
                             title=ft.Text(str(nombre_mp), style=self.estilo_texto()),
-                            subtitle=ft.Text(f"Unidad: {unidad}" if unidad else "", 
-                                            style=self.estilo_texto(), 
-                                            size=12),
-                            on_click=lambda ev, valor=nombre_mp, id=id_mp, u=unidad: 
-                                    self.seleccionar_opcion(valor, id, u)
+                            subtitle=ft.Text(
+                                f"Unidad: {nombre_unidad}" if nombre_unidad else "",
+                                style=self.estilo_texto(),
+                                size=12
+                            ),
+                            on_click=lambda ev, valor=nombre_mp, id=id_mp, u=nombre_unidad:
+                                self.seleccionar_opcion(valor, id, u)
                         ),
                     )
                 )
