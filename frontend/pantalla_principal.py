@@ -53,7 +53,6 @@ class vista_principal(configuracion_pantalla):
         if not self.rows_container:
             return
         
-        # recargar totales por si cambiaron los detalles
         self._load_totales()
         
         rows = []
@@ -256,7 +255,7 @@ class vista_principal(configuracion_pantalla):
             ],
             label_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto()
         )
-        tf_cantidad = ft.TextField(label="Cantidad", width=120, keyboard_type=ft.KeyboardType.NUMBER, label_style=self.estilo_texto(), text_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto())
+        tf_cantidad = ft.TextField(label="Cantidad", width=120, keyboard_type=ft.KeyboardType.NUMBER,input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9.]"), label_style=self.estilo_texto(), text_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto())
 
         lista_items = ft.Column(spacing=6, scroll="auto", height=180)
         txt_total = ft.Text("Total: $ 0.00", weight="bold", style=self.estilo_texto())
@@ -306,7 +305,7 @@ class vista_principal(configuracion_pantalla):
                 self.mostrar_snack_bar("Ingresa una cantidad")
                 return
             try:
-                cant = int(float(tf_cantidad.value))
+                cant = float(tf_cantidad.value)
                 if cant <= 0:
                     raise ValueError
             except ValueError:
@@ -384,7 +383,7 @@ class vista_principal(configuracion_pantalla):
                     self.mostrar_snack_bar(msg)
                 else:
                     self.mostrar_snack_bar("Error al cargar el pedido")
-
+                    
 
         contenido = ft.Container(
             width=650,
@@ -437,6 +436,333 @@ class vista_principal(configuracion_pantalla):
         )
 
         self.page.overlay.clear()
+        self.page.overlay.append(dlg)
+        self.page.overlay.append(date_picker)
+        dlg.open = True
+        self.page.update()
+
+    def mostrar_ventana_modificar_pedido(self):
+        import flet as ft
+        from datetime import datetime
+
+        if not self.pedido_seleccionado:
+            self.mostrar_snack_bar("Selecciona un pedido primero.")
+            return
+
+        pedido = self.pedido_seleccionado
+        id_pedido = int(pedido[0])
+        nombre_actual = str(pedido[1] or "")
+        estado_actual = str(pedido[2] or "Pendiente")
+        cliente_actual = str(pedido[3] or "")
+        fecha_actual = str(pedido[4] or datetime.today().date())
+
+
+        self.cursor.execute(
+            """
+            SELECT dp.id_producto, p.nombre_producto, dp.cantidad
+            FROM Detalle_pedido dp
+            JOIN Producto p ON p.id_producto = dp.id_producto
+            WHERE dp.id_pedido = %s
+            """,
+            (id_pedido,)
+        )
+        detalle = self.cursor.fetchall()
+        
+        from backend.controladores_pana.controlador_cargar_pedido import CargarPedido
+        ctrl = CargarPedido()
+        try:
+            catalogo = ctrl.seleccionar_producto()
+        finally:
+            ctrl.cerrar_conexion()
+
+        estado = {
+            "original": {int(r[0]): float(r[2]) for r in detalle},
+            "items": [{"id": int(r[0]), "nombre": r[1], "cantidad": float(r[2])} for r in detalle],
+            "catalogo": {str(p[0]): (int(p[0]), p[1], float(p[2])) for p in catalogo},
+        }
+
+        # Controles cabecera
+        tf_nombre = ft.TextField(label="Nombre pedido", value=nombre_actual, width=250, label_style=self.estilo_texto(), text_style=self.estilo_texto(), focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto())
+        tf_cliente = ft.TextField(label="Cliente", value=cliente_actual, width=250, label_style=self.estilo_texto(), text_style=self.estilo_texto(), focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto())
+        dd_estado = ft.Dropdown(
+            label="Estado",
+            value=estado_actual if estado_actual in ["Pendiente", "Entregado", "Cancelado"] else "Pendiente",
+            options=[ft.dropdown.Option("Pendiente"), ft.dropdown.Option("Entregado"), ft.dropdown.Option("Cancelado")],
+            width=200,
+            label_style=self.estilo_texto(),
+            focused_border_color="#807E7E",
+            color="#37373A",
+            hint_style=self.estilo_texto(),
+        )
+
+        fecha_label = ft.Text(str(fecha_actual), style=self.estilo_texto())
+        date_picker = ft.DatePicker(on_change=lambda e: (setattr(fecha_label, "value", str(e.control.value)), self.page.update()))
+
+        # Lista de ítems editables
+        lista_items = ft.Column(spacing=6, scroll="auto", height=240)
+
+        def redibujar_items():
+            lista_items.controls.clear()
+            for idx, it in enumerate(estado["items"]):
+                fila = ft.Container(
+                    bgcolor="#fcc8a9",
+                    border_radius=6,
+                    padding=8,
+                    content=ft.Row(
+                        controls=[
+                            ft.Text(it["nombre"], style=self.estilo_texto(), expand=True),
+                            ft.TextField(
+                                value=str(it["cantidad"]),
+                                width=120,
+                                keyboard_type=ft.KeyboardType.NUMBER,
+                                input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9.]"),
+                                label="Cantidad",
+                                label_style=self.estilo_texto(), text_style=self.estilo_texto(),
+                                focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto(),
+                                on_change=lambda e, i=idx: actualizar_cantidad(i, e.control.value),
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE,
+                                icon_color="#a72d2d",
+                                tooltip="Quitar producto",
+                                on_click=lambda e, i=idx: quitar_item(i),
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                )
+                lista_items.controls.append(fila)
+            self.page.update()
+
+        def actualizar_cantidad(idx, valor):
+            try:
+                cant = float(valor) if valor.strip() != "" else 0.0
+                if cant < 0:
+                    raise ValueError
+                estado["items"][idx]["cantidad"] = cant
+            except ValueError:
+                self.mostrar_snack_bar("Cantidad inválida")
+
+        def quitar_item(idx):
+            if 0 <= idx < len(estado["items"]):
+                estado["items"].pop(idx)
+                redibujar_items()
+
+        redibujar_items()
+
+        # Sección para agregar nuevo producto
+        dd_productos = ft.Dropdown(
+            label="Producto",
+            width=320,
+            options=[ft.dropdown.Option(key=str(pid), text=nombre) for pid, nombre, _ in catalogo],
+            label_style=self.estilo_texto(), focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto()
+        )
+        tf_cantidad_nueva = ft.TextField(
+            label="Cantidad",
+            width=120,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9.]"),
+            label_style=self.estilo_texto(), text_style=self.estilo_texto(),
+            focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto()
+        )
+
+        def agregar_item_nuevo(e):
+            if not dd_productos.value:
+                self.mostrar_snack_bar("Selecciona un producto")
+                return
+            if not tf_cantidad_nueva.value.strip():
+                self.mostrar_snack_bar("Ingresa una cantidad")
+                return
+            try:
+                cant = float(tf_cantidad_nueva.value)
+                if cant <= 0:
+                    raise ValueError
+            except ValueError:
+                self.mostrar_snack_bar("La cantidad debe ser positiva")
+                return
+
+            pid, nombre, _ = estado["catalogo"][dd_productos.value]
+            
+            for it in estado["items"]:
+                if it["id"] == pid:
+                    it["cantidad"] += cant
+                    break
+            else:
+                estado["items"].append({"id": pid, "nombre": nombre, "cantidad": cant})
+
+            dd_productos.value = None
+            tf_cantidad_nueva.value = ""
+            redibujar_items()
+
+        
+        def receta_producto(pid: int):
+            self.cursor.execute(
+                """
+                SELECT mp.id_materia_prima, mp.nombre_materia_prima, mp.stock, mpp.cantidad
+                FROM MateriaPrima_Producto mpp
+                JOIN MateriaPrima mp ON mp.id_materia_prima = mpp.id_materia_prima
+                WHERE mpp.id_producto = %s
+                """,
+                (pid,)
+            )
+            return self.cursor.fetchall()
+
+        def verificar_incrementos(deltas_por_producto: dict):
+            
+            requeridos_por_mp = {} 
+            nombres_mp = {}         
+
+            for pid, delta in deltas_por_producto.items():
+                if delta <= 0:
+                    continue
+                for id_mp, nom_mp, stock, cant_unidad in receta_producto(pid):
+                    requerido = float(cant_unidad) * float(delta)
+                    requeridos_por_mp[id_mp] = requeridos_por_mp.get(id_mp, 0.0) + requerido
+                    nombres_mp[id_mp] = nom_mp
+
+            faltantes = []
+            for id_mp, req in requeridos_por_mp.items():
+                self.cursor.execute("SELECT stock FROM MateriaPrima WHERE id_materia_prima=%s", (id_mp,))
+                fila = self.cursor.fetchone()
+                disponible = float(fila[0]) if fila and fila[0] is not None else 0.0
+                if req > disponible + 1e-9:
+                    faltantes.append({"nombre": nombres_mp[id_mp], "faltante": req - disponible})
+
+            return (len(faltantes) == 0, faltantes)
+
+        def ajustar_stock_por_delta(pid: int, delta: float):
+            
+            signo = -1.0 if delta > 0 else 1.0 
+            factor = abs(delta)
+            if factor == 0:
+                return
+            for id_mp, _, _, cant_unidad in receta_producto(pid):
+                variacion = signo * (float(cant_unidad) * factor)
+                self.cursor.execute(
+                    "UPDATE MateriaPrima SET stock = stock + %s WHERE id_materia_prima = %s",
+                    (variacion, id_mp)
+                )
+
+        def guardar_cambios(e):
+            
+            if not tf_nombre.value.strip():
+                self.mostrar_snack_bar("Ingresa un nombre de pedido")
+                return
+            if not tf_cliente.value.strip():
+                self.mostrar_snack_bar("Ingresa un cliente")
+                return
+            fecha_val = fecha_label.value or str(datetime.today().date())
+
+            
+            nuevos = {}
+            for it in estado["items"]:
+                if it["cantidad"] < 0:
+                    self.mostrar_snack_bar("Cantidades negativas no permitidas")
+                    return
+                if it["cantidad"] > 0:
+                    nuevos[it["id"]] = float(it["cantidad"])
+
+            originales = estado["original"]
+            
+            todos_ids = set(list(originales.keys()) + list(nuevos.keys()))
+            deltas = {pid: nuevos.get(pid, 0.0) - originales.get(pid, 0.0) for pid in todos_ids}
+
+            
+            ok, faltantes = verificar_incrementos(deltas)
+            if not ok:
+                msg = "Faltan insumos:\n" + "\n".join([f"- {f['nombre']}: falta {f['faltante']:.2f}" for f in faltantes])
+                self.mostrar_snack_bar(msg)
+                return
+
+            try:
+                
+                self.cursor.execute(
+                    "UPDATE Pedido SET nombre_pedido=%s, estado_pedido=%s, cliente=%s, fecha_pedido=%s WHERE id_pedido=%s",
+                    (tf_nombre.value.strip(), dd_estado.value, tf_cliente.value.strip(), fecha_val, id_pedido)
+                )
+
+
+                for pid in todos_ids:
+                    delta = deltas[pid]
+                    
+                    if pid in originales and pid in nuevos:
+                        
+                        self.cursor.execute(
+                            "UPDATE Detalle_pedido SET cantidad=%s WHERE id_pedido=%s AND id_producto=%s",
+                            (nuevos[pid], id_pedido, pid)
+                        )
+                    elif pid in originales and pid not in nuevos:
+                        self.cursor.execute(
+                            "DELETE FROM Detalle_pedido WHERE id_pedido=%s AND id_producto=%s",
+                            (id_pedido, pid)
+                        )
+                    elif pid not in originales and pid in nuevos:
+                        self.cursor.execute(
+                            "INSERT INTO Detalle_pedido (id_pedido, id_producto, cantidad) VALUES (%s, %s, %s)",
+                            (id_pedido, pid, nuevos[pid])
+                        )
+
+                    if abs(delta) > 1e-9:
+                        ajustar_stock_por_delta(pid, delta)
+
+                self.conexion.commit()
+                self.cursor.execute("SELECT * FROM Pedido")
+                self.pedidos_refresh = self.cursor.fetchall()
+                self._refresh_table()
+
+                self.mostrar_snack_bar("Pedido modificado con éxito")
+                dlg.open = False
+                self.page.update()
+            except Exception as ex:
+                self.conexion.rollback()
+                print(f"Error al modificar pedido: {ex}")
+                self.mostrar_snack_bar("Error al modificar el pedido")
+
+        
+        contenido = ft.Container(
+            width=760,
+            content=ft.Column(
+                spacing=12,
+                controls=[
+                    ft.Text("Modificar pedido", size=16, weight="bold", style=self.estilo_texto()),
+                    ft.Row(
+                        controls=[
+                            tf_nombre,
+                            tf_cliente,
+                            dd_estado,
+                            ft.TextButton("Fecha", style=self.estilo_de_botones(), on_click=lambda _: self.page.open(date_picker)),
+                            fecha_label,
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                    ft.Divider(),
+                    ft.Text("Ítems del pedido", weight="bold", style=self.estilo_texto()),
+                    lista_items,
+                    ft.Row(
+                        controls=[
+                            dd_productos,
+                            tf_cantidad_nueva,
+                            ft.ElevatedButton("Agregar producto", style=self.estilo_de_botones(), on_click=agregar_item_nuevo),
+                        ],
+                        alignment=ft.MainAxisAlignment.START,
+                        spacing=10,
+                    ),
+                ],
+            ),
+        )
+
+        dlg = ft.AlertDialog(
+            modal=True,
+            bgcolor="#fdd0b5",
+            title=ft.Text("Modificar pedido", style=self.estilo_texto(), size=25),
+            content=contenido,
+            actions=[
+                ft.TextButton("Cancelar", style=self.estilo_de_botones(), on_click=lambda e: (setattr(dlg, "open", False), self.page.update())),
+                ft.TextButton("Guardar", style=self.estilo_de_botones(), on_click=guardar_cambios),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
         self.page.overlay.append(dlg)
         self.page.overlay.append(date_picker)
         dlg.open = True
@@ -581,7 +907,8 @@ class vista_principal(configuracion_pantalla):
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
             width=100,
-            style=self.estilo_de_botones()
+            style=self.estilo_de_botones(),
+            on_click=lambda e: self.mostrar_ventana_modificar_pedido()
         )
         
         texto_cargar_pedido = ft.Text(
@@ -612,7 +939,6 @@ class vista_principal(configuracion_pantalla):
                 )
             ]
         )
-        
 
         self.page.add(
             ft.Row(

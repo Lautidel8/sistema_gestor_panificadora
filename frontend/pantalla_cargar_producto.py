@@ -376,7 +376,7 @@ class vista_cargar_producto(configuracion_pantalla):
                     ft.Text("Datos del Producto", style=self.estilo_texto(), weight="bold"),
                     self.entrada_nombre_producto,
                     self.entrada_precio,
-                    ft.Text("(Atencion: El precio que cargues debe ser pensado para vender por unidad de producto)", style=self.estilo_texto(),size=10,color="#451515", weight="bold"),
+                    ft.Text("(Atencion: El precio que cargues debe ser pensado para vender por unidad de producto o por 1kg)", style=self.estilo_texto(),size=10,color="#451515", weight="bold"),
                 ],
                 alignment=ft.MainAxisAlignment.START,
                 spacing=10,
