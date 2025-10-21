@@ -11,7 +11,6 @@ def main(page: ft.Page):
     page.window_fullscreen = True
     page.window_resizable = False
     
-    
     def cambiar_pantalla(e):
         if page.route == "/":
             PantallaLogin(page)

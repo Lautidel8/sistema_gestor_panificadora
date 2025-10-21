@@ -12,13 +12,11 @@ class configuracion_pantalla:
         self.conexion = conectar()
         self.cursor = self.conexion.cursor()
         
-        
     def estilo_texto(self):
         return ft.TextStyle(
             color="#37373A",
             font_family="Arial",
         )
-
 
     def estilo_de_botones(self):
         return ft.ButtonStyle(
@@ -35,7 +33,6 @@ class configuracion_pantalla:
             },
             padding=15
         )
-
 
     def boton_volver(self):
         boton_volver = ft.ElevatedButton(

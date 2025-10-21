@@ -7,12 +7,3 @@ class Pedido:
         self.cliente = cliente
         self.cantidad = cantidad
         
-class FuncionesPedido:
-    def __init__(self,pedido:Pedido):
-        self.pedido = pedido
-        
-    def mostrar_pedido(self):
-        pass
-    
-    def generar_reporte(self):
-        pass

@@ -1,4 +1,3 @@
-
 from frontend.controladores_front.configuracion_pantalla import configuracion_pantalla
 import flet as ft
 from datetime import datetime
@@ -143,6 +142,7 @@ class vista_principal(configuracion_pantalla):
             label="Precio unitario",
             width=200,
             keyboard_type=ft.KeyboardType.NUMBER,
+            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*(?:[.,]\d*)?$"),
             label_style=self.estilo_texto(),
             text_style=self.estilo_texto(),
             focused_border_color="#807E7E",
@@ -173,7 +173,8 @@ class vista_principal(configuracion_pantalla):
                 self.mostrar_snack_bar("Ingresa un precio")
                 return
             try:
-                nuevo_precio = float(tf_precio.value)
+                # permitir coma o punto
+                nuevo_precio = float(tf_precio.value.replace(",", "."))
             except ValueError:
                 self.mostrar_snack_bar("El precio debe ser numérico")
                 return
@@ -183,6 +184,9 @@ class vista_principal(configuracion_pantalla):
             if res is True:
                 self.mostrar_snack_bar("Producto actualizado")
                 dlg.open = False
+                # refrescar totales en la grilla para ver el nuevo precio aplicado
+                self._load_totales()
+                self._refresh_table()
                 self.page.update()
             elif res == "duplicado":
                 self.mostrar_snack_bar("Ya existe un producto con ese nombre")
@@ -255,7 +259,18 @@ class vista_principal(configuracion_pantalla):
             ],
             label_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto()
         )
-        tf_cantidad = ft.TextField(label="Cantidad", width=120, keyboard_type=ft.KeyboardType.NUMBER,input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9.]"), label_style=self.estilo_texto(), text_style=self.estilo_texto(),focused_border_color="#807E7E",color="#37373A",hint_style=self.estilo_texto())
+        tf_cantidad = ft.TextField(
+            label="Cantidad",
+            width=120,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            # permite "", "12", "12.", ".5", "12,5"
+            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*(?:[.,]\d*)?$"),
+            label_style=self.estilo_texto(),
+            text_style=self.estilo_texto(),
+            focused_border_color="#807E7E",
+            color="#37373A",
+            hint_style=self.estilo_texto()
+        )
 
         lista_items = ft.Column(spacing=6, scroll="auto", height=180)
         txt_total = ft.Text("Total: $ 0.00", weight="bold", style=self.estilo_texto())
@@ -305,7 +320,8 @@ class vista_principal(configuracion_pantalla):
                 self.mostrar_snack_bar("Ingresa una cantidad")
                 return
             try:
-                cant = float(tf_cantidad.value)
+                # normalizar coma -> punto
+                cant = float(tf_cantidad.value.replace(",", "."))
                 if cant <= 0:
                     raise ValueError
             except ValueError:
@@ -442,8 +458,6 @@ class vista_principal(configuracion_pantalla):
         self.page.update()
 
     def mostrar_ventana_modificar_pedido(self):
-        import flet as ft
-        from datetime import datetime
 
         if not self.pedido_seleccionado:
             self.mostrar_snack_bar("Selecciona un pedido primero.")
@@ -515,14 +529,17 @@ class vista_principal(configuracion_pantalla):
                                 value=str(it["cantidad"]),
                                 width=120,
                                 keyboard_type=ft.KeyboardType.NUMBER,
-                                input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9.]"),
+                                input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*(?:[.,]\d*)?$"),
                                 label="Cantidad",
-                                label_style=self.estilo_texto(), text_style=self.estilo_texto(),
-                                focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto(),
+                                label_style=self.estilo_texto(),
+                                text_style=self.estilo_texto(),
+                                focused_border_color="#807E7E",
+                                color="#37373A",
+                                hint_style=self.estilo_texto(),
                                 on_change=lambda e, i=idx: actualizar_cantidad(i, e.control.value),
                             ),
                             ft.IconButton(
-                                icon=ft.Icons.DELETE,
+                                icon=ft.Icons.DELETE,  # corregido
                                 icon_color="#a72d2d",
                                 tooltip="Quitar producto",
                                 on_click=lambda e, i=idx: quitar_item(i),
@@ -534,9 +551,11 @@ class vista_principal(configuracion_pantalla):
                 lista_items.controls.append(fila)
             self.page.update()
 
+
         def actualizar_cantidad(idx, valor):
             try:
-                cant = float(valor) if valor.strip() != "" else 0.0
+                v = valor.replace(",", ".")
+                cant = float(v) if v.strip() not in ("", ".") else 0.0
                 if cant < 0:
                     raise ValueError
                 estado["items"][idx]["cantidad"] = cant
@@ -561,9 +580,12 @@ class vista_principal(configuracion_pantalla):
             label="Cantidad",
             width=120,
             keyboard_type=ft.KeyboardType.NUMBER,
-            input_filter=ft.InputFilter(allow=True, regex_string=r"[0-9.]"),
-            label_style=self.estilo_texto(), text_style=self.estilo_texto(),
-            focused_border_color="#807E7E", color="#37373A", hint_style=self.estilo_texto()
+            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*(?:[.,]\d*)?$"),
+            label_style=self.estilo_texto(),
+            text_style=self.estilo_texto(),
+            focused_border_color="#807E7E",
+            color="#37373A",
+            hint_style=self.estilo_texto()
         )
 
         def agregar_item_nuevo(e):
@@ -574,7 +596,7 @@ class vista_principal(configuracion_pantalla):
                 self.mostrar_snack_bar("Ingresa una cantidad")
                 return
             try:
-                cant = float(tf_cantidad_nueva.value)
+                cant = float(tf_cantidad_nueva.value.replace(",", "."))
                 if cant <= 0:
                     raise ValueError
             except ValueError:
@@ -607,11 +629,10 @@ class vista_principal(configuracion_pantalla):
             )
             return self.cursor.fetchall()
 
+        # Verifica stock solo para incrementos (delta > 0)
         def verificar_incrementos(deltas_por_producto: dict):
-            
-            requeridos_por_mp = {} 
-            nombres_mp = {}         
-
+            requeridos_por_mp = {}
+            nombres_mp = {}
             for pid, delta in deltas_por_producto.items():
                 if delta <= 0:
                     continue
@@ -619,7 +640,6 @@ class vista_principal(configuracion_pantalla):
                     requerido = float(cant_unidad) * float(delta)
                     requeridos_por_mp[id_mp] = requeridos_por_mp.get(id_mp, 0.0) + requerido
                     nombres_mp[id_mp] = nom_mp
-
             faltantes = []
             for id_mp, req in requeridos_por_mp.items():
                 self.cursor.execute("SELECT stock FROM MateriaPrima WHERE id_materia_prima=%s", (id_mp,))
@@ -627,24 +647,93 @@ class vista_principal(configuracion_pantalla):
                 disponible = float(fila[0]) if fila and fila[0] is not None else 0.0
                 if req > disponible + 1e-9:
                     faltantes.append({"nombre": nombres_mp[id_mp], "faltante": req - disponible})
-
             return (len(faltantes) == 0, faltantes)
 
+        # Ajusta stock por delta: delta>0 descuenta, delta<0 devuelve
         def ajustar_stock_por_delta(pid: int, delta: float):
-            
-            signo = -1.0 if delta > 0 else 1.0 
-            factor = abs(delta)
-            if factor == 0:
+            if abs(delta) <= 1e-9:
                 return
+            signo = -1.0 if delta > 0 else 1.0
+            factor = abs(delta)
             for id_mp, _, _, cant_unidad in receta_producto(pid):
                 variacion = signo * (float(cant_unidad) * factor)
                 self.cursor.execute(
                     "UPDATE MateriaPrima SET stock = stock + %s WHERE id_materia_prima = %s",
                     (variacion, id_mp)
                 )
+        
+        def eliminar_pedido_confirmado(confirm_dlg):
+            try:
+                # 1) Buscar detalle actual
+                self.cursor.execute(
+                    "SELECT id_producto, cantidad FROM Detalle_pedido WHERE id_pedido = %s",
+                    (id_pedido,)
+                )
+                detalle_actual = self.cursor.fetchall()  # [(id_producto, cantidad)]
 
+                # 2) Devolver stock según receta
+                for id_prod, cant_prod in detalle_actual:
+                    for id_mp, _, _, cant_unidad in receta_producto(id_prod):
+                        devolver = float(cant_unidad) * float(cant_prod)
+                        self.cursor.execute(
+                            "UPDATE MateriaPrima SET stock = stock + %s WHERE id_materia_prima = %s",
+                            (devolver, id_mp)
+                        )
+
+                # 3) Eliminar detalle y cabecera (respetando FKs)
+                self.cursor.execute("DELETE FROM Detalle_pedido WHERE id_pedido = %s", (id_pedido,))
+                self.cursor.execute("DELETE FROM Pedido WHERE id_pedido = %s", (id_pedido,))
+
+                self.conexion.commit()
+
+                # 4) Refrescar UI
+                if self.pedido_seleccionado and int(self.pedido_seleccionado[0]) == id_pedido:
+                    self.pedido_seleccionado = None
+
+                self.cursor.execute("SELECT * FROM Pedido")
+                self.pedidos_refresh = self.cursor.fetchall()
+                self._refresh_table()
+
+                self.mostrar_snack_bar("Pedido eliminado con éxito")
+                confirm_dlg.open = False
+                dlg.open = False
+                self.page.update()
+            except Exception as ex:
+                self.conexion.rollback()
+                print(f"Error al eliminar pedido: {ex}")
+                self.mostrar_snack_bar("Error al eliminar el pedido")
+                confirm_dlg.open = False
+                self.page.update()
+                
+        def confirmar_eliminacion(e):
+            confirm_dlg = ft.AlertDialog(
+                modal=True,
+                bgcolor="#fdd0b5",
+                title=ft.Text("Confirmar eliminación", style=self.estilo_texto(), size=18),
+                content=ft.Text(
+                    "Vas a eliminar este pedido.\nSe devolverá al stock la materia prima utilizada.\n¿Deseas continuar?",
+                    style=self.estilo_texto()
+                ),
+                actions=[
+                    ft.TextButton(
+                        "Cancelar",
+                        style=self.estilo_de_botones(),
+                        on_click=lambda ev: (setattr(confirm_dlg, "open", False), self.page.update())
+                    ),
+                    ft.TextButton(
+                        "Eliminar",
+                        style=self.estilo_de_botones(),
+                        on_click=lambda ev: eliminar_pedido_confirmado(confirm_dlg)
+                    ),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+            self.page.overlay.append(confirm_dlg)
+            confirm_dlg.open = True
+            self.page.update()
+
+        # === FALTABA: guardar_cambios ===
         def guardar_cambios(e):
-            
             if not tf_nombre.value.strip():
                 self.mostrar_snack_bar("Ingresa un nombre de pedido")
                 return
@@ -653,7 +742,7 @@ class vista_principal(configuracion_pantalla):
                 return
             fecha_val = fecha_label.value or str(datetime.today().date())
 
-            
+            # Construir cantidades nuevas
             nuevos = {}
             for it in estado["items"]:
                 if it["cantidad"] < 0:
@@ -663,11 +752,9 @@ class vista_principal(configuracion_pantalla):
                     nuevos[it["id"]] = float(it["cantidad"])
 
             originales = estado["original"]
-            
             todos_ids = set(list(originales.keys()) + list(nuevos.keys()))
             deltas = {pid: nuevos.get(pid, 0.0) - originales.get(pid, 0.0) for pid in todos_ids}
 
-            
             ok, faltantes = verificar_incrementos(deltas)
             if not ok:
                 msg = "Faltan insumos:\n" + "\n".join([f"- {f['nombre']}: falta {f['faltante']:.2f}" for f in faltantes])
@@ -675,18 +762,15 @@ class vista_principal(configuracion_pantalla):
                 return
 
             try:
-                
+                # Cabecera
                 self.cursor.execute(
                     "UPDATE Pedido SET nombre_pedido=%s, estado_pedido=%s, cliente=%s, fecha_pedido=%s WHERE id_pedido=%s",
                     (tf_nombre.value.strip(), dd_estado.value, tf_cliente.value.strip(), fecha_val, id_pedido)
                 )
-
-
+                # Detalle + stock por delta
                 for pid in todos_ids:
                     delta = deltas[pid]
-                    
                     if pid in originales and pid in nuevos:
-                        
                         self.cursor.execute(
                             "UPDATE Detalle_pedido SET cantidad=%s WHERE id_pedido=%s AND id_producto=%s",
                             (nuevos[pid], id_pedido, pid)
@@ -701,15 +785,13 @@ class vista_principal(configuracion_pantalla):
                             "INSERT INTO Detalle_pedido (id_pedido, id_producto, cantidad) VALUES (%s, %s, %s)",
                             (id_pedido, pid, nuevos[pid])
                         )
-
-                    if abs(delta) > 1e-9:
-                        ajustar_stock_por_delta(pid, delta)
+                    ajustar_stock_por_delta(pid, delta)
 
                 self.conexion.commit()
+                # Refrescar grilla
                 self.cursor.execute("SELECT * FROM Pedido")
                 self.pedidos_refresh = self.cursor.fetchall()
                 self._refresh_table()
-
                 self.mostrar_snack_bar("Pedido modificado con éxito")
                 dlg.open = False
                 self.page.update()
@@ -717,9 +799,8 @@ class vista_principal(configuracion_pantalla):
                 self.conexion.rollback()
                 print(f"Error al modificar pedido: {ex}")
                 self.mostrar_snack_bar("Error al modificar el pedido")
-
-        
-        contenido = ft.Container(
+                
+        contenido_modificar = ft.Container(
             width=760,
             content=ft.Column(
                 spacing=12,
@@ -755,8 +836,9 @@ class vista_principal(configuracion_pantalla):
             modal=True,
             bgcolor="#fdd0b5",
             title=ft.Text("Modificar pedido", style=self.estilo_texto(), size=25),
-            content=contenido,
+            content=contenido_modificar,
             actions=[
+                ft.TextButton("Eliminar", style=self.estilo_de_botones(), on_click=confirmar_eliminacion),
                 ft.TextButton("Cancelar", style=self.estilo_de_botones(), on_click=lambda e: (setattr(dlg, "open", False), self.page.update())),
                 ft.TextButton("Guardar", style=self.estilo_de_botones(), on_click=guardar_cambios),
             ],
