@@ -1,4 +1,4 @@
-# Sistema Gestor de Panificadora Janssen 🍞
+# Sistema Gestor de Panificadora Janssen
 
 ## Descripción
 
@@ -7,7 +7,7 @@ Reemplaza el método tradicional de gestión (WhatsApp y pizarra) por una soluci
 
 El sistema permite registrar, gestionar y controlar pedidos, así como llevar un seguimiento del stock de materia prima, mejorando la organización interna y el control de las operaciones diarias.
 
-## Características ✨
+## Características
 
 * **Gestión de Pedidos:**
     * Registrar nuevos pedidos indicando cliente, fecha, productos y cantidades.
@@ -33,7 +33,7 @@ El sistema permite registrar, gestionar y controlar pedidos, así como llevar un
 * **Seguridad:**
     * Inicio de sesión protegido por contraseña para el gerente.
 
-## Tecnologías Utilizadas 🛠️
+## Tecnologías Utilizadas
 
 * **Lenguaje:** Python
 * **Framework UI:** Flet
@@ -44,7 +44,7 @@ El sistema permite registrar, gestionar y controlar pedidos, así como llevar un
     * `bcrypt` (para hashing de contraseñas)
     * `flet`
 
-## Configuración e Instalación ⚙️
+## Configuración e Instalación
 
 1.  **Clonar el Repositorio:**
     ```bash
@@ -77,7 +77,7 @@ El sistema permite registrar, gestionar y controlar pedidos, así como llevar un
         pip install flet mysql-connector-python bcrypt
         ```
 
-## Ejecución de la Aplicación ▶️
+## Ejecución de la Aplicación
 
 1.  Asegúrate de que la base de datos MySQL esté en ejecución (ya sea el contenedor Docker o tu servidor local).
 2.  Activa tu entorno virtual (si creaste uno).
