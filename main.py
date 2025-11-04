@@ -1,10 +1,14 @@
 import flet as ft
+import sys
+import os
+from backend.util_paths import resource_path
 from frontend.pantalla_login import PantallaLogin
 from frontend.pantalla_principal import vista_principal
 from frontend.pantalla_cargar_materia_prima import vista_carga_mp
 from frontend.pantalla_cargar_nueva_mp import vista_carga_mp_nueva
 from frontend.pantalla_controlar_stock import vista_controlar_stock
 from frontend.pantalla_cargar_producto import vista_cargar_producto
+
 
 def main(page: ft.Page):
     

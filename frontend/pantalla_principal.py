@@ -1,6 +1,7 @@
 from frontend.controladores_front.configuracion_pantalla import configuracion_pantalla
 import flet as ft
 from datetime import datetime
+from backend.util_paths import resource_path
 
 class vista_principal(configuracion_pantalla):
     
@@ -906,7 +907,7 @@ class vista_principal(configuracion_pantalla):
         )
 
         logo_pana = ft.Image(
-            src="logo_panaderia_janssen.png",
+            src=resource_path("Logo_panaderia_janssen.png"),
             width=100,             
             height=100,
             fit=ft.ImageFit.CONTAIN
