@@ -906,7 +906,7 @@ class vista_principal(configuracion_pantalla):
         )
 
         logo_pana = ft.Image(
-            src="logo_panaderia.png",
+            src="logo_panaderia_janssen.png",
             width=100,             
             height=100,
             fit=ft.ImageFit.CONTAIN
